@@ -25,11 +25,19 @@ export async function POST(request: NextRequest) {
 
 export async function GET(request: NextRequest) {
   try {
+    const { searchParams } = new URL(request.url);
+    const page = parseInt(searchParams.get('page') || '1');
+    const limit = parseInt(searchParams.get('limit') || '12');
+
     const infographics = await prisma.infographics.findMany({
       orderBy: { id: 'desc' },
+      skip: (page - 1) * limit,
+      take: limit,
     });
 
-    const response = NextResponse.json(infographics);
+    const total = await prisma.infographics.count();
+
+    const response = NextResponse.json({ infographics, total, page, limit });
     response.headers.set('Cache-Control', 'public, s-maxage=60, stale-while-revalidate=59');
     return response;
   } catch (error) {

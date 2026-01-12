@@ -13,6 +13,9 @@ interface Infographic {
 export default function InfographicsPage() {
   const [infographics, setInfographics] = useState<Infographic[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showImageModal, setShowImageModal] = useState(false);
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
@@ -24,22 +27,39 @@ export default function InfographicsPage() {
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
-    fetchInfographics();
+    fetchInfographics(1);
     const role = localStorage.getItem('role');
     setUserRole(role);
   }, []);
 
-  const fetchInfographics = async () => {
+  const loadMore = () => {
+    const nextPage = currentPage + 1;
+    setCurrentPage(nextPage);
+    fetchInfographics(nextPage, true);
+  };
+
+  const fetchInfographics = async (page = 1, append = false) => {
     try {
-      const res = await fetch('/api/infographics');
+      if (append) {
+        setLoadingMore(true);
+      } else {
+        setLoading(true);
+      }
+      const res = await fetch(`/api/infographics?page=${page}&limit=12`);
       if (res.ok) {
         const data = await res.json();
-        setInfographics(data);
+        if (append) {
+          setInfographics(prev => [...prev, ...data.infographics]);
+        } else {
+          setInfographics(data.infographics);
+        }
+        setHasMore(data.infographics.length === 12);
       }
     } catch (error) {
       console.error('Failed to fetch infographics:', error);
     } finally {
       setLoading(false);
+      setLoadingMore(false);
     }
   };
 
@@ -73,7 +93,9 @@ export default function InfographicsPage() {
       if (res.ok) {
         setShowCreateModal(false);
         setFormData({ title: '', image: '' });
-        fetchInfographics();
+        setCurrentPage(1);
+        setHasMore(true);
+        fetchInfographics(1);
       } else {
         const data = await res.json();
         alert(data.error || 'Failed to create infographic');
@@ -163,6 +185,18 @@ export default function InfographicsPage() {
                         </button>
                       </div>
                     )}
+          
+                    {hasMore && !loading && (
+                      <div className="flex justify-center mt-6">
+                        <button
+                          onClick={loadMore}
+                          disabled={loadingMore}
+                          className="bg-green-700 text-white px-5 py-2 rounded-md shadow-md hover:bg-green-800 transition disabled:opacity-50"
+                        >
+                          {loadingMore ? 'Loading...' : 'Load More'}
+                        </button>
+                      </div>
+                    )}
                   </div>
                 </div>
               ))}
@@ -242,7 +276,7 @@ export default function InfographicsPage() {
       {/* Image Viewer Modal */}
       {showImageModal && selectedImage && (
         <div className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center">
-          <div className="bg-white w-full max-w-4xl rounded-xl shadow-lg p-4 relative">
+          <div className="bg-white w-full max-w-4xl h-5/6 rounded-xl shadow-lg p-4 relative">
             <button
               onClick={() => setShowImageModal(false)}
               className="absolute top-4 right-4 text-gray-500 hover:text-black z-10"
@@ -250,7 +284,9 @@ export default function InfographicsPage() {
               <X className="w-6 h-6" />
             </button>
 
-            <div className="w-full h-96 relative">
+            <h2 className="text-xl font-semibold text-black mb-4">Image Viewer</h2>
+
+            <div className="w-full h-full relative">
               <Image
                 src={selectedImage}
                 alt="Infographic"
