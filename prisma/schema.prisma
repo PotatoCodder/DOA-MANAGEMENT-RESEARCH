@@ -1,0 +1,111 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client"
+  output   = "../app/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Admin {
+  id            Int      @id @default(autoincrement())
+  fullName      String?  
+  Email    String?  @unique
+  userName      String
+  password      String
+  updationDate  DateTime @updatedAt
+}
+
+
+model employee {
+  id           Int      @id @default(autoincrement())
+  employeeId    String   @unique
+  fullName     String?
+  email      String?  @unique
+  mobileNumber String?  
+  password     String
+  status       Boolean? 
+  regDate      DateTime @default(now())
+  updationDate DateTime? @updatedAt
+}
+
+model ongoingResearch {
+  id               Int    @id @default(autoincrement())
+  userId           String
+  title            String
+  proponents       String
+  fundingSource    String
+  projectDuration  String
+  budgetAllocation String
+  commodity        String
+  status           String
+
+  subResearches    subOngoingResearch[]
+}
+
+model subOngoingResearch {
+  id                    Int    @id @default(autoincrement())
+  userId                String
+  objectives            String
+  actualAccomplishment  String
+  dateConducted         String
+  documentation         String
+  targetActivities      String?
+
+  ongoingResearchId     Int
+  ongoingResearch       ongoingResearch @relation(fields: [ongoingResearchId], references: [id], onDelete: Cascade)
+}
+
+// Research-related tables
+model completedResearch {
+  id        Int    @id @default(autoincrement())
+  userid    String
+  title     String
+  researcher String
+  funding   String
+  project   String
+  file      String
+}
+
+model maturedResearch {
+  id        Int    @id @default(autoincrement())
+  userid    String
+  title     String
+  proponents String
+  funding   String
+  duration  String
+  file      String
+}
+
+model publicationResearch {
+  id        Int    @id @default(autoincrement())
+  userid    String
+  title     String
+  proponents String
+  journal   String
+  published String
+  file      String
+}
+
+model infographics {
+  id        Int    @id @default(autoincrement())
+  title         String
+  image      String @db.Text
+}
+
+model researchProposal {
+  id            Int      @id @default(autoincrement())
+  userid        String
+  title         String
+  status        String
+  proponents    String
+  fundingAgency String
+  dateUpload    DateTime @default(now())
+  file          String
+}
