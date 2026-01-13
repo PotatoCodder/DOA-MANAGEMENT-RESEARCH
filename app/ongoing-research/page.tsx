@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Edit, Trash2, X, Loader } from 'lucide-react';
+import { Edit, Trash2, X, Loader, Search } from 'lucide-react';
 import Link from 'next/link';
 
 interface OngoingResearch {
@@ -21,7 +21,8 @@ export default function OngoingResearchPage() {
   const [researches, setResearches] = useState<OngoingResearch[]>([]);
   const [loading, setLoading] = useState(true);
   const [userRole, setUserRole] = useState<string | null>(null);
-  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [showModal, setShowModal] = useState(false);
+  const [editingResearch, setEditingResearch] = useState<OngoingResearch | null>(null);
   const [formData, setFormData] = useState({
     title: '',
     proponents: '',
@@ -32,12 +33,29 @@ export default function OngoingResearchPage() {
     status: '',
   });
   const [submitting, setSubmitting] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
 
   useEffect(() => {
     fetchResearches();
     const role = localStorage.getItem('role');
     setUserRole(role);
   }, []);
+
+  useEffect(() => {
+    if (editingResearch) {
+      setFormData({
+        title: editingResearch.title,
+        proponents: editingResearch.proponents,
+        fundingSource: editingResearch.fundingSource,
+        projectDuration: editingResearch.projectDuration,
+        budgetAllocation: editingResearch.budgetAllocation,
+        commodity: editingResearch.commodity,
+        status: editingResearch.status,
+      });
+    } else {
+      setFormData({ title: '', proponents: '', fundingSource: '', projectDuration: '', budgetAllocation: '', commodity: '', status: '' });
+    }
+  }, [editingResearch]);
 
   const fetchResearches = async () => {
     try {
@@ -76,34 +94,38 @@ export default function OngoingResearchPage() {
     }
   };
 
-  const handleCreate = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSubmitting(true);
 
     try {
       const token = localStorage.getItem('token');
-      const res = await fetch('/api/ongoing-research', {
-        method: 'POST',
+      const method = editingResearch ? 'PUT' : 'POST';
+      const url = editingResearch ? `/api/ongoing-research/${editingResearch.id}` : '/api/ongoing-research';
+
+      const res = await fetch(url, {
+        method,
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`,
         },
         body: JSON.stringify({
-          userId: 'current-user', // Assuming current user
+          ...(editingResearch ? {} : { userId: 'current-user' }), // Assuming current user
           ...formData,
         }),
       });
 
       if (res.ok) {
-        setShowCreateModal(false);
+        setShowModal(false);
+        setEditingResearch(null);
         setFormData({ title: '', proponents: '', fundingSource: '', projectDuration: '', budgetAllocation: '', commodity: '', status: '' });
         fetchResearches();
       } else {
-        alert('Failed to create research');
+        alert(`Failed to ${editingResearch ? 'update' : 'create'} research`);
       }
     } catch (error) {
-      console.error('Error creating research:', error);
-      alert('Error creating research');
+      console.error(`Error ${editingResearch ? 'updating' : 'creating'} research:`, error);
+      alert(`Error ${editingResearch ? 'updating' : 'creating'} research`);
     } finally {
       setSubmitting(false);
     }
@@ -117,12 +139,26 @@ export default function OngoingResearchPage() {
           <h1 className="text-3xl font-bold text-black">Ongoing Research</h1>
           {(userRole === 'admin' || userRole === 'employee') && (
             <button
-              onClick={() => setShowCreateModal(true)}
+              onClick={() => { setEditingResearch(null); setShowModal(true); }}
               className="bg-green-700 text-white px-5 py-2 rounded-md shadow-md hover:bg-green-800 transition"
             >
               Create Ongoing Research
             </button>
           )}
+        </div>
+
+        {/* Search Bar */}
+        <div className="mb-6">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+            <input
+              type="text"
+              placeholder="Search researches..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent text-black"
+            />
+          </div>
         </div>
 
         {/* Table */}
@@ -144,7 +180,15 @@ export default function OngoingResearchPage() {
                 </tr>
               </thead>
               <tbody>
-                {researches.map((research) => (
+                {researches.filter(research =>
+                  research.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                  research.proponents.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                  research.fundingSource.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                  research.projectDuration.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                  research.budgetAllocation.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                  research.commodity.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                  research.status.toLowerCase().includes(searchTerm.toLowerCase())
+                ).map((research) => (
                   <tr key={research.id} className="border-b border-white/20 hover:bg-white/5">
                     <td className="px-6 py-4 text-black">{research.title}</td>
                     <td className="px-6 py-4 text-black">{research.proponents}</td>
@@ -164,7 +208,7 @@ export default function OngoingResearchPage() {
                         </Link>
                         {userRole === 'admin' && (
                           <>
-                            <button className="p-1 text-blue-600 hover:text-blue-800">
+                            <button onClick={() => { setEditingResearch(research); setShowModal(true); }} className="p-1 text-blue-600 hover:text-blue-800">
                               <Edit className="w-4 h-4" />
                             </button>
                             <button
@@ -193,21 +237,21 @@ export default function OngoingResearchPage() {
       </div>
 
       {/* Create Modal */}
-      {showCreateModal && (
+      {showModal && (
         <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center">
           <div className="bg-white w-full max-w-lg rounded-xl shadow-lg p-6 relative">
             <button
-              onClick={() => setShowCreateModal(false)}
+              onClick={() => setShowModal(false)}
               className="absolute top-4 right-4 text-gray-500 hover:text-black"
             >
               <X />
             </button>
 
             <h2 className="text-xl font-semibold text-black mb-6">
-              Create Ongoing Research
+              {editingResearch ? 'Edit Ongoing Research' : 'Create Ongoing Research'}
             </h2>
 
-            <form onSubmit={handleCreate} className="space-y-4">
+            <form onSubmit={handleSubmit} className="space-y-4">
               <div>
                 <label className="text-sm font-medium text-black">
                   Title
@@ -302,7 +346,7 @@ export default function OngoingResearchPage() {
               <div className="flex justify-end gap-3 pt-4">
                 <button
                   type="button"
-                  onClick={() => setShowCreateModal(false)}
+                  onClick={() => setShowModal(false)}
                   className="px-4 py-2 border rounded-md"
                 >
                   Cancel
@@ -312,7 +356,7 @@ export default function OngoingResearchPage() {
                   disabled={submitting}
                   className="px-4 py-2 bg-green-700 text-white rounded-md hover:bg-green-800 disabled:opacity-50"
                 >
-                  {submitting ? 'Creating...' : 'Create Research'}
+                  {submitting ? (editingResearch ? 'Updating...' : 'Creating...') : (editingResearch ? 'Update Research' : 'Create Research')}
                 </button>
               </div>
             </form>

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { X, Edit, Trash2, Loader } from 'lucide-react';
+import { X, Edit, Trash2, Loader, Search } from 'lucide-react';
 
 interface CompletedResearch {
   id: number;
@@ -28,6 +28,7 @@ export default function CompletedResearchPage() {
     file: '',
   });
   const [submitting, setSubmitting] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
 
   useEffect(() => {
     fetchResearches();
@@ -133,6 +134,20 @@ export default function CompletedResearchPage() {
           )}
         </div>
 
+        {/* Search Bar */}
+        <div className="mb-6">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+            <input
+              type="text"
+              placeholder="Search completed researches..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent text-black"
+            />
+          </div>
+        </div>
+
         {/* Table */}
         <div className="backdrop-blur-md bg-white/10 border border-white/30 rounded-xl shadow-lg overflow-hidden">
           {loading ? (
@@ -149,7 +164,12 @@ export default function CompletedResearchPage() {
                 </tr>
               </thead>
               <tbody>
-                {researches.map((research) => (
+                {researches.filter(research =>
+                  research.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                  research.researcher.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                  research.funding.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                  research.project.toLowerCase().includes(searchTerm.toLowerCase())
+                ).map((research) => (
                   <tr key={research.id} className="border-b border-white/20 hover:bg-white/5">
                     <td className="px-6 py-4 text-black">{research.title}</td>
                     <td className="px-6 py-4 text-black">{research.researcher}</td>
