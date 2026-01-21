@@ -124,7 +124,7 @@ export default function CompletedResearchPage() {
         {/* Header */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-10 gap-4">
           <h1 className="text-3xl font-bold text-black">Completed Research</h1>
-          {(userRole === 'admin' || userRole === 'employee') && (
+          {userRole === 'admin' && (
             <button
               onClick={() => setShowCreateModal(true)}
               className="bg-green-700 text-white px-5 py-2 rounded-md shadow-md hover:bg-green-800 transition"

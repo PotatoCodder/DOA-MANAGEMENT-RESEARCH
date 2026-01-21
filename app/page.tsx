@@ -16,6 +16,6 @@ export default function Home() {
     <div>
       <LoginModal />
       <HeroSection/>
-    </div>
+    </div>      
   );
 }

@@ -29,7 +29,7 @@ export default function SubOngoingResearchPage() {
   const [selectedPdf, setSelectedPdf] = useState<string | null>(null);
   const [userRole, setUserRole] = useState<string | null>(null);
   const [formData, setFormData] = useState({
-    objectives: '',
+    objectives: `Objective ${researches.length + 1}`,
     actualAccomplishment: '',
     dateConducted: '',
     documentation: '',
@@ -45,6 +45,13 @@ export default function SubOngoingResearchPage() {
     const role = localStorage.getItem('role');
     setUserRole(role);
   }, [ongoingResearchId]);
+
+  useEffect(() => {
+    setFormData(prev => ({
+      ...prev,
+      objectives: `Objective ${researches.length + 1}`
+    }));
+  }, [researches.length]);
 
   const fetchResearches = async () => {
     try {
@@ -62,7 +69,7 @@ export default function SubOngoingResearchPage() {
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file && file.type === 'application/pdf') {
+    if (file && file.type.startsWith('image/')) {
       const reader = new FileReader();
       reader.onload = () => {
         const base64 = (reader.result as string).split(',')[1];
@@ -144,7 +151,7 @@ export default function SubOngoingResearchPage() {
               <p className="text-gray-600 mt-2">For: {researches[0].ongoingResearch.title}</p>
             )}
           </div>
-          {(userRole === 'admin' || userRole === 'employee') && (
+          {userRole === 'admin' && (
             <button
               onClick={() => setShowCreateModal(true)}
               className="bg-green-700 text-white px-5 py-2 rounded-md shadow-md hover:bg-green-800 transition"
@@ -205,7 +212,7 @@ export default function SubOngoingResearchPage() {
                             }}
                             className="px-3 py-1 bg-green-600 text-white text-sm rounded hover:bg-green-700"
                           >
-                            View PDF
+                            View Documentation
                           </button>
                         )}
                         {userRole === 'admin' && (
@@ -258,12 +265,18 @@ export default function SubOngoingResearchPage() {
                 <label className="text-sm font-medium text-black">
                   Objectives
                 </label>
-                <textarea
+                <select
                   value={formData.objectives}
                   onChange={(e) => setFormData({ ...formData, objectives: e.target.value })}
-                  className="w-full border rounded-md px-3 py-2 mt-1 placeholder-black"
+                  className="w-full border rounded-md px-3 py-2 mt-1 text-black"
                   required
-                />
+                >
+                  {Array.from({ length: researches.length + 1 }, (_, i) => (
+                    <option key={i + 1} value={`Objective ${i + 1}`}>
+                      Objective {i + 1}
+                    </option>
+                  ))}
+                </select>
               </div>
 
               <div>
@@ -304,11 +317,11 @@ export default function SubOngoingResearchPage() {
 
               <div>
                 <label className="text-sm font-medium text-black">
-                  Attach PDF file
+                  Attach Photo
                 </label>
                 <input
                   type="file"
-                  accept="application/pdf"
+                  accept="image/*"
                   onChange={handleFileChange}
                   className="w-full mt-1"
                   required
@@ -336,7 +349,7 @@ export default function SubOngoingResearchPage() {
         </div>
       )}
 
-      {/* PDF Viewer Modal */}
+      {/* Documentation Viewer Modal */}
       {showPdfModal && selectedPdf && (
         <div className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center">
           <div className="bg-white w-full max-w-4xl h-5/6 rounded-xl shadow-lg p-4 relative">
@@ -347,12 +360,12 @@ export default function SubOngoingResearchPage() {
               <X className="w-6 h-6" />
             </button>
 
-            <h2 className="text-xl font-semibold text-black mb-4">PDF Viewer</h2>
+            <h2 className="text-xl font-semibold text-black mb-4">Documentation Viewer</h2>
 
-            <iframe
-              src={`data:application/pdf;base64,${selectedPdf}`}
-              className="w-full h-full border rounded"
-              title="PDF Viewer"
+            <img
+              src={`data:image/jpeg;base64,${selectedPdf}`}
+              className="w-full h-full object-contain border rounded"
+              alt="Documentation"
             />
           </div>
         </div>

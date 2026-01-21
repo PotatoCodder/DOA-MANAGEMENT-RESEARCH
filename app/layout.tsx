@@ -16,11 +16,6 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "D9 Research Portal",
   description: "Department of Agriculture Research Portal",
-  icons: {
-    icon: "/da-favicon.png",
-    shortcut: "/da-favicon.png",
-    apple: "/da-favicon.png",
-  },
 };
 
 

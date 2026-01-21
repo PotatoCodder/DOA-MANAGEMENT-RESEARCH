@@ -93,7 +93,7 @@ export default function StationalMapPage() {
               transition={{ duration: 0.8, delay: 0.8 }}
             >
               <h3 className="text-lg font-bold text-green-700 mb-2">Ipil Zamboanga Sibugay<br />Research and Experiment Station</h3>
-              <p className="text-gray-600 mb-4">Mabini and Tarue Experimental Site</p>
+              <p className="text-gray-600 mb-4">Mabini and Taruc Experimental Site</p>
               <h4 className="font-semibold text-green-600 mb-2">PRIORITY COMMODITY</h4>
               <ul className="list-disc list-inside text-gray-700">
                 <li>Coffee</li>
@@ -113,7 +113,7 @@ export default function StationalMapPage() {
               transition={{ duration: 0.8, delay: 1.0 }}
             >
               <h3 className="text-lg font-bold text-green-700 mb-2">Zamboanga del Norte<br />Research and Experiment Station</h3>
-              <p className="text-gray-600 mb-4">Kalawik and Inuman Experimental Site</p>
+              <p className="text-gray-600 mb-4">Kalawit and Inuman Experimental Site</p>
               <h4 className="font-semibold text-green-600 mb-2">PRIORITY COMMODITY</h4>
               <ul className="list-disc list-inside text-gray-700">
                 <li>Mango</li>
@@ -129,7 +129,7 @@ export default function StationalMapPage() {
               transition={{ duration: 0.8, delay: 1.2 }}
             >
               <h3 className="text-lg font-bold text-green-700 mb-2">La Paz Research and<br />Experiment Station</h3>
-              <p className="text-gray-600 mb-4">Bomugutan and Isabela Experimental Site</p>
+              <p className="text-gray-600 mb-4">Pamucutan and Isabela Experimental Site</p>
               <h4 className="font-semibold text-green-600 mb-2">PRIORITY COMMODITY</h4>
               <ul className="list-disc list-inside text-gray-700">
                 <li>Highland and Pinatbot</li>
@@ -143,7 +143,7 @@ export default function StationalMapPage() {
               transition={{ duration: 0.8, delay: 1.4 }}
             >
               <h3 className="text-lg font-bold text-green-700 mb-2">Zamboanga del Sur<br />Research and Experiment Station</h3>
-              <p className="text-gray-600 mb-4">Dumalinao and Batman Experimental Site</p>
+              <p className="text-gray-600 mb-4">Dumalinao and Betinan Experimental Site</p>
               <h4 className="font-semibold text-green-600 mb-2">PRIORITY COMMODITY</h4>
               <ul className="list-disc list-inside text-gray-700">
                 <li>Native Chicken</li>
