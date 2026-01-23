@@ -340,39 +340,79 @@ export default function SubOngoingResearchPage() {
               </thead>
               <tbody>
                 {objectives.map((objective) => (
-                  <tr key={objective.id} className="border-b border-white/20 hover:bg-white/5">
-                    <td className="px-6 py-4 text-black">{objective.objectives}</td>
-                    <td className="px-6 py-4 text-black">
-                      {objective.targetActivityList.length > 0
-                        ? objective.targetActivityList.map((ta, index) => `${index + 1}. ${ta.targetActivity}`).join('\n')
-                        : '-'}
-                    </td>
-                    <td className="px-6 py-4 text-black">{objective.date ? new Date(objective.date).toLocaleDateString() : '-'}</td>
-                    <td className="px-6 py-4">
-                      {userRole === 'admin' && (
-                        <div className="flex gap-2">
-                          <button
-                            onClick={() => {
-                              setEditingObjective(objective);
-                              setShowWorkPlanModal(true);
-                              setShowObjectivesForm(true);
-                              setShowAddTargetForm(false);
-                              setShowTargetForm(false);
-                            }}
-                            className="p-1 text-blue-600 hover:text-blue-800"
-                          >
-                            <Edit className="w-4 h-4" />
-                          </button>
-                          <button
-                            onClick={() => handleDeleteObjective(objective.id)}
-                            className="p-1 text-red-600 hover:text-red-800"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
-                        </div>
-                      )}
-                    </td>
-                  </tr>
+                  objective.targetActivityList.length > 0 ? (
+                    objective.targetActivityList.map((ta, index) => (
+                      <tr key={`${objective.id}-${index}`} className="border-b border-white/20 hover:bg-white/5">
+                        {index === 0 && (
+                          <>
+                            <td className="px-6 py-4 text-black" rowSpan={objective.targetActivityList.length}>{objective.objectives}</td>
+                            <td className="px-6 py-4 text-black">{(index + 1) + '. ' + ta.targetActivity}</td>
+                            <td className="px-6 py-4 text-black">{ta.date ? new Date(ta.date).toLocaleDateString() : '-'}</td>
+                            <td className="px-6 py-4" rowSpan={objective.targetActivityList.length}>
+                              {userRole === 'admin' && (
+                                <div className="flex gap-2">
+                                  <button
+                                    onClick={() => {
+                                      setEditingObjective(objective);
+                                      setShowWorkPlanModal(true);
+                                      setShowObjectivesForm(true);
+                                      setShowAddTargetForm(false);
+                                      setShowTargetForm(false);
+                                    }}
+                                    className="p-1 text-blue-600 hover:text-blue-800"
+                                  >
+                                    <Edit className="w-4 h-4" />
+                                  </button>
+                                  <button
+                                    onClick={() => handleDeleteObjective(objective.id)}
+                                    className="p-1 text-red-600 hover:text-red-800"
+                                  >
+                                    <Trash2 className="w-4 h-4" />
+                                  </button>
+                                </div>
+                              )}
+                            </td>
+                          </>
+                        )}
+                        {index > 0 && (
+                          <>
+                            <td className="px-6 py-4 text-black">{(index + 1) + '. ' + ta.targetActivity}</td>
+                            <td className="px-6 py-4 text-black">{ta.date ? new Date(ta.date).toLocaleDateString() : '-'}</td>
+                          </>
+                        )}
+                      </tr>
+                    ))
+                  ) : (
+                    <tr key={objective.id} className="border-b border-white/20 hover:bg-white/5">
+                      <td className="px-6 py-4 text-black">{objective.objectives}</td>
+                      <td className="px-6 py-4 text-black">-</td>
+                      <td className="px-6 py-4 text-black">-</td>
+                      <td className="px-6 py-4">
+                        {userRole === 'admin' && (
+                          <div className="flex gap-2">
+                            <button
+                              onClick={() => {
+                                setEditingObjective(objective);
+                                setShowWorkPlanModal(true);
+                                setShowObjectivesForm(true);
+                                setShowAddTargetForm(false);
+                                setShowTargetForm(false);
+                              }}
+                              className="p-1 text-blue-600 hover:text-blue-800"
+                            >
+                              <Edit className="w-4 h-4" />
+                            </button>
+                            <button
+                              onClick={() => handleDeleteObjective(objective.id)}
+                              className="p-1 text-red-600 hover:text-red-800"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
+                        )}
+                      </td>
+                    </tr>
+                  )
                 ))}
                 {objectives.length === 0 && (
                   <tr>
@@ -543,6 +583,7 @@ export default function SubOngoingResearchPage() {
                     value={targetFormData.date}
                     onChange={(e) => setTargetFormData({ ...targetFormData, date: e.target.value })}
                     className="w-full border rounded-md px-3 py-2 mt-1 text-black"
+                    required
                   />
                 </div>
                 <div className="flex justify-between">
@@ -563,7 +604,7 @@ export default function SubOngoingResearchPage() {
                 </div>
                 <ul className="space-y-2">
                   {targetActivitiesList.map((item, index) => (
-                    <li key={index} className="text-black">- {item.targetActivity} ({item.date})</li>
+                    <li key={index} className="text-black">{(index + 1) + '. ' + item.targetActivity} ({item.date})</li>
                   ))}
                 </ul>
                 <button

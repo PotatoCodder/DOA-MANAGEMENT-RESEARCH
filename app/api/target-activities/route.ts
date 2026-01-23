@@ -21,9 +21,21 @@ export async function POST(request: NextRequest) {
   const newTarget = await prisma.targetActivities.create({
     data: {
       targetActivity,
-      date: date ? new Date(date) : null,
+      date: (date && date !== '') ? new Date(date) : null,
       objectivesId
     }
   });
   return NextResponse.json(newTarget);
+}
+
+export async function DELETE(request: NextRequest) {
+  const { searchParams } = new URL(request.url);
+  const objectivesId = searchParams.get('objectivesId');
+  if (objectivesId) {
+    await prisma.targetActivities.deleteMany({
+      where: { objectivesId: parseInt(objectivesId) }
+    });
+    return NextResponse.json({ message: 'Deleted' });
+  }
+  return NextResponse.json({ error: 'objectivesId required' }, { status: 400 });
 }
