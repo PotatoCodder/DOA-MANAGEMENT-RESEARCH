@@ -109,3 +109,19 @@ model researchProposal {
   dateUpload    DateTime @default(now())
   file          String
 }
+
+model Objectives {
+  id Int @id @default(autoincrement())
+  objectives String
+  targetActivities String?
+  date DateTime?
+  targetActivityList TargetActivities[]
+}
+
+model TargetActivities {
+  id Int @id @default(autoincrement())
+  targetActivity String
+  date DateTime?
+  objectivesId Int
+  objectives Objectives @relation(fields: [objectivesId], references: [id])
+}

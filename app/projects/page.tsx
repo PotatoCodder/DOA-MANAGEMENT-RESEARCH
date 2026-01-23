@@ -18,7 +18,7 @@ const iconMap: { [key: string]: React.ComponentType<any> | string } = {
   'Corn and Cassava': Leaf,
   'Mango': mangoIcon.src,
   'Plantation Ccrops': TreePine,
-  'Live  Stock': cowIcon.src,
+  'LiveStock': cowIcon.src,
   'Other R4D': BookOpen,
 };
 

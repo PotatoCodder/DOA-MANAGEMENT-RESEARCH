@@ -18,11 +18,27 @@ interface SubOngoingResearch {
   };
 }
 
+interface TargetActivity {
+  id: number;
+  targetActivity: string;
+  date?: string;
+  objectivesId: number;
+}
+
+interface Objective {
+  id: number;
+  objectives: string;
+  targetActivities?: string;
+  date?: string;
+  targetActivityList: TargetActivity[];
+}
+
 export default function SubOngoingResearchPage() {
   const searchParams = useSearchParams();
   const ongoingResearchId = searchParams.get('ongoingResearchId');
 
   const [researches, setResearches] = useState<SubOngoingResearch[]>([]);
+  const [objectives, setObjectives] = useState<Objective[]>([]);
   const [loading, setLoading] = useState(true);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showPdfModal, setShowPdfModal] = useState(false);
@@ -33,7 +49,6 @@ export default function SubOngoingResearchPage() {
     actualAccomplishment: '',
     dateConducted: '',
     documentation: '',
-    targetActivities: '',
   });
   const [submitting, setSubmitting] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
@@ -42,16 +57,19 @@ export default function SubOngoingResearchPage() {
     if (ongoingResearchId) {
       fetchResearches();
     }
+    fetchObjectives();
     const role = localStorage.getItem('role');
     setUserRole(role);
   }, [ongoingResearchId]);
 
   useEffect(() => {
-    setFormData(prev => ({
-      ...prev,
-      objectives: `Objective ${researches.length + 1}`
-    }));
-  }, [researches.length]);
+    if (objectives.length > 0) {
+      setFormData(prev => ({
+        ...prev,
+        objectives: objectives[0].objectives
+      }));
+    }
+  }, [objectives]);
 
   const fetchResearches = async () => {
     try {
@@ -64,6 +82,18 @@ export default function SubOngoingResearchPage() {
       console.error('Failed to fetch sub researches:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchObjectives = async () => {
+    try {
+      const res = await fetch('/api/objectives');
+      if (res.ok) {
+        const data = await res.json();
+        setObjectives(data);
+      }
+    } catch (error) {
+      console.error('Failed to fetch objectives:', error);
     }
   };
 
@@ -100,7 +130,7 @@ export default function SubOngoingResearchPage() {
 
       if (res.ok) {
         setShowCreateModal(false);
-        setFormData({ objectives: '', actualAccomplishment: '', dateConducted: '', documentation: '', targetActivities: '' });
+        setFormData({ objectives: '', actualAccomplishment: '', dateConducted: '', documentation: '' });
         fetchResearches();
       } else {
         alert('Failed to create sub research');
@@ -151,7 +181,7 @@ export default function SubOngoingResearchPage() {
               <p className="text-gray-600 mt-2">For: {researches[0].ongoingResearch.title}</p>
             )}
           </div>
-          {userRole === 'admin' && (
+          {(userRole === 'admin' || userRole === 'employee') && (
             <button
               onClick={() => setShowCreateModal(true)}
               className="bg-green-700 text-white px-5 py-2 rounded-md shadow-md hover:bg-green-800 transition"
@@ -159,6 +189,42 @@ export default function SubOngoingResearchPage() {
               Create Online Reporting
             </button>
           )}
+        </div>
+
+        {/* Workplan Table */}
+        <div className="mb-10">
+          <h2 className="text-2xl font-bold text-black mb-4">Workplan</h2>
+          <div className="backdrop-blur-md bg-white/10 border border-white/30 rounded-xl shadow-lg overflow-hidden">
+            <table className="w-full">
+              <thead className="bg-green-700 text-white">
+                <tr>
+                  <th className="px-6 py-3 text-left">Objectives</th>
+                  <th className="px-6 py-3 text-left">Target Activities</th>
+                  <th className="px-6 py-3 text-left">Date</th>
+                </tr>
+              </thead>
+              <tbody>
+                {objectives.map((objective) => (
+                  <tr key={objective.id} className="border-b border-white/20 hover:bg-white/5">
+                    <td className="px-6 py-4 text-black">{objective.objectives}</td>
+                    <td className="px-6 py-4 text-black">
+                      {objective.targetActivityList.length > 0
+                        ? objective.targetActivityList.map((ta, index) => `${index + 1}. ${ta.targetActivity}`).join('\n')
+                        : '-'}
+                    </td>
+                    <td className="px-6 py-4 text-black">{objective.date ? new Date(objective.date).toLocaleDateString() : '-'}</td>
+                  </tr>
+                ))}
+                {objectives.length === 0 && (
+                  <tr>
+                    <td colSpan={3} className="px-6 py-8 text-center text-black/60">
+                      No objectives found
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
         </div>
 
         {/* Search Bar */}
@@ -186,7 +252,6 @@ export default function SubOngoingResearchPage() {
                   <th className="px-6 py-3 text-left">Objectives</th>
                   <th className="px-6 py-3 text-left">Actual Accomplishment</th>
                   <th className="px-6 py-3 text-left">Date Conducted</th>
-                  <th className="px-6 py-3 text-left">Target Activities</th>
                   <th className="px-6 py-3 text-left">Actions</th>
                 </tr>
               </thead>
@@ -194,14 +259,12 @@ export default function SubOngoingResearchPage() {
                 {researches.filter(research =>
                   research.objectives.toLowerCase().includes(searchTerm.toLowerCase()) ||
                   research.actualAccomplishment.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                  research.dateConducted.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                  (research.targetActivities && research.targetActivities.toLowerCase().includes(searchTerm.toLowerCase()))
+                  research.dateConducted.toLowerCase().includes(searchTerm.toLowerCase())
                 ).map((research) => (
                   <tr key={research.id} className="border-b border-white/20 hover:bg-white/5">
                     <td className="px-6 py-4 text-black">{research.objectives}</td>
                     <td className="px-6 py-4 text-black">{research.actualAccomplishment}</td>
                     <td className="px-6 py-4 text-black">{research.dateConducted}</td>
-                    <td className="px-6 py-4 text-black">{research.targetActivities || '-'}</td>
                     <td className="px-6 py-4">
                       <div className="flex gap-2">
                         {research.documentation && (
@@ -234,7 +297,7 @@ export default function SubOngoingResearchPage() {
                 ))}
                 {researches.length === 0 && (
                   <tr>
-                    <td colSpan={5} className="px-6 py-8 text-center text-black/60">
+                    <td colSpan={4} className="px-6 py-8 text-center text-black/60">
                       No sub research found
                     </td>
                   </tr>
@@ -271,9 +334,9 @@ export default function SubOngoingResearchPage() {
                   className="w-full border rounded-md px-3 py-2 mt-1 text-black"
                   required
                 >
-                  {Array.from({ length: researches.length + 1 }, (_, i) => (
-                    <option key={i + 1} value={`Objective ${i + 1}`}>
-                      Objective {i + 1}
+                  {objectives.map((obj) => (
+                    <option key={obj.id} value={obj.objectives}>
+                      {obj.objectives}
                     </option>
                   ))}
                 </select>
@@ -304,16 +367,6 @@ export default function SubOngoingResearchPage() {
                 />
               </div>
 
-              <div>
-                <label className="text-sm font-medium text-black">
-                  Target Activities
-                </label>
-                <textarea
-                  value={formData.targetActivities}
-                  onChange={(e) => setFormData({ ...formData, targetActivities: e.target.value })}
-                  className="w-full border rounded-md px-3 py-2 mt-1 placeholder-black"
-                />
-              </div>
 
               <div>
                 <label className="text-sm font-medium text-black">
