@@ -29,7 +29,6 @@ interface Objective {
   id: number;
   objectives: string;
   targetActivities?: string;
-  date?: string;
   targetActivityList: TargetActivity[];
 }
 
@@ -60,7 +59,6 @@ export default function SubOngoingResearchPage() {
   const [objectivesFormData, setObjectivesFormData] = useState({
     objectives: '',
     targetActivities: '',
-    date: '',
   });
   const [targetFormData, setTargetFormData] = useState({
     targetActivity: '',
@@ -92,10 +90,9 @@ export default function SubOngoingResearchPage() {
       setObjectivesFormData({
         objectives: editingObjective.objectives,
         targetActivities: editingObjective.targetActivities || '',
-        date: editingObjective.date ? editingObjective.date.split('T')[0] : '',
       });
     } else {
-      setObjectivesFormData({ objectives: '', targetActivities: '', date: '' });
+      setObjectivesFormData({ objectives: '', targetActivities: '' });
     }
   }, [editingObjective]);
 
@@ -229,7 +226,7 @@ export default function SubOngoingResearchPage() {
         setShowWorkPlanModal(false);
         setEditingObjective(null);
         setTargetActivitiesList([]);
-        setObjectivesFormData({ objectives: '', targetActivities: '', date: '' });
+        setObjectivesFormData({ objectives: '', targetActivities: '' });
         fetchObjectives();
       } else {
         alert(`Failed to ${editingObjective ? 'update' : 'create'} objective`);
@@ -337,7 +334,6 @@ export default function SubOngoingResearchPage() {
                 <tr>
                   <th className="px-6 py-3 text-left">Objectives</th>
                   <th className="px-6 py-3 text-left">Target Activities</th>
-                  <th className="px-6 py-3 text-left">Date</th>
                   <th className="px-6 py-3 text-left">Actions</th>
                 </tr>
               </thead>
@@ -350,7 +346,6 @@ export default function SubOngoingResearchPage() {
                         ? objective.targetActivityList.map((ta, index) => `${index + 1}. ${ta.targetActivity}`).join('\n')
                         : '-'}
                     </td>
-                    <td className="px-6 py-4 text-black">{objective.date ? new Date(objective.date).toLocaleDateString() : '-'}</td>
                     <td className="px-6 py-4">
                       {userRole === 'admin' && (
                         <div className="flex gap-2">
@@ -379,7 +374,7 @@ export default function SubOngoingResearchPage() {
                 ))}
                 {objectives.length === 0 && (
                   <tr>
-                    <td colSpan={4} className="px-6 py-8 text-center text-black/60">
+                    <td colSpan={3} className="px-6 py-8 text-center text-black/60">
                       No objectives found
                     </td>
                   </tr>
@@ -503,17 +498,6 @@ export default function SubOngoingResearchPage() {
                   />
                 </div>
 
-                <div>
-                  <label className="text-sm font-medium text-black">
-                    Date
-                  </label>
-                  <input
-                    type="date"
-                    value={objectivesFormData.date}
-                    onChange={(e) => setObjectivesFormData({ ...objectivesFormData, date: e.target.value })}
-                    className="w-full border rounded-md px-3 py-2 mt-1 text-black"
-                  />
-                </div>
 
                 <div className="flex justify-between">
                   <button

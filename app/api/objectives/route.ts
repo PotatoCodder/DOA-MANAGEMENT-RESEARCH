@@ -10,12 +10,11 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   const body = await request.json();
-  const { objectives, targetActivities, date } = body;
+  const { objectives, targetActivities } = body;
   const newObjective = await prisma.objectives.create({
     data: {
       objectives,
-      targetActivities,
-      date: date ? new Date(date) : null
+      targetActivities
     }
   });
   return NextResponse.json(newObjective);

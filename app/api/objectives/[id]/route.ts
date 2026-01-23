@@ -9,13 +9,12 @@ export async function PUT(
     const { id } = await params;
     const parsedId = parseInt(id);
     const body = await request.json();
-    const { objectives, date } = body;
+    const { objectives } = body;
 
     const updatedObjective = await prisma.objectives.update({
       where: { id: parsedId },
       data: {
-        objectives,
-        date: date ? new Date(date) : null
+        objectives
       }
     });
 
