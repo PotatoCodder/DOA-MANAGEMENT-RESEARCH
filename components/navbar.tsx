@@ -61,7 +61,7 @@ export default function Navbar() {
     { name: "Home", href: "/" },
     { name: "Organizational Chart", href: "/organizational-chart" },
     { name: "Mission & Vision", href: "/mission-vision" },
-    { name: "Stational Map", href: "/stational-map" },
+    { name: "Research Station", href: "/stational-map" },
     { name: "Infographics", href: "/infographics" },
     { name: "Completed Research", href: "/completed-research" },
     { name: "Projects", href: "/projects" },
