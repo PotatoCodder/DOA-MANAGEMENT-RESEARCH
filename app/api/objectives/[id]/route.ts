@@ -3,15 +3,16 @@ import prisma from '@/lib/prisma';
 
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const id = parseInt(params.id);
+    const { id } = await params;
+    const parsedId = parseInt(id);
     const body = await request.json();
     const { objectives, date } = body;
 
     const updatedObjective = await prisma.objectives.update({
-      where: { id },
+      where: { id: parsedId },
       data: {
         objectives,
         date: date ? new Date(date) : null
@@ -27,19 +28,20 @@ export async function PUT(
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const id = parseInt(params.id);
+    const { id } = await params;
+    const parsedId = parseInt(id);
 
     // First delete associated target activities
     await prisma.targetActivities.deleteMany({
-      where: { objectivesId: id }
+      where: { objectivesId: parsedId }
     });
 
     // Then delete the objective
     await prisma.objectives.delete({
-      where: { id }
+      where: { id: parsedId }
     });
 
     return NextResponse.json({ message: 'Objective deleted successfully' });
