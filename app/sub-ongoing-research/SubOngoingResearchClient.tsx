@@ -661,7 +661,8 @@ export default function SubOngoingResearchPage() {
                 <textarea
                   value={formData.actualAccomplishment}
                   onChange={(e) => setFormData({ ...formData, actualAccomplishment: e.target.value })}
-                  className="w-full border rounded-md px-3 py-2 mt-1 placeholder-black"
+                  className="text-black  w-full border rounded-md px-3 py-2 mt-1 placeholder-black "
+                  placeholder="Enter actual accomplishment"
                   required
                 />
               </div>
@@ -674,7 +675,7 @@ export default function SubOngoingResearchPage() {
                   type="date"
                   value={formData.dateConducted}
                   onChange={(e) => setFormData({ ...formData, dateConducted: e.target.value })}
-                  className="w-full border rounded-md px-3 py-2 mt-1 placeholder-black"
+                  className="w-full border rounded-md px-3 py-2 mt-1 placeholder-black text-black"
                   required
                 />
               </div>
