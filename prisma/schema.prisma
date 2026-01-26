@@ -36,17 +36,19 @@ model employee {
 }
 
 model ongoingResearch {
-  id               Int    @id @default(autoincrement())
-  userId           String
-  title            String
-  proponents       String
-  fundingSource    String
-  projectDuration  String
-  budgetAllocation String
-  commodity        String
-  status           String
+   id               Int    @id @default(autoincrement())
+   userId           String
+   title            String
+   proponents       String
+   fundingSource    String
+   projectDuration  String
+   budgetAllocation String
+   commodity        String
+   status           String
+   pdf              String?
+   projectLocation  String?
 
-  subResearches    subOngoingResearch[]
+   subResearches    subOngoingResearch[]
 }
 
 model subOngoingResearch {

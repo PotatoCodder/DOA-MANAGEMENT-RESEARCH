@@ -5,16 +5,18 @@ import { Edit, Trash2, X, Loader, Search } from 'lucide-react';
 import Link from 'next/link';
 
 interface OngoingResearch {
-  id: number;
-  userId: string;
-  title: string;
-  proponents: string;
-  fundingSource: string;
-  projectDuration: string;
-  budgetAllocation: string;
-  commodity: string;
-  status: string;
-  subResearches: any[];
+   id: number;
+   userId: string;
+   title: string;
+   proponents: string;
+   fundingSource: string;
+   projectDuration: string;
+   budgetAllocation: string;
+   commodity: string;
+   status: string;
+   pdf?: string;
+   projectLocation?: string;
+   subResearches: any[];
 }
 
 export default function OngoingResearchPage() {
@@ -31,6 +33,8 @@ export default function OngoingResearchPage() {
     budgetAllocation: '',
     commodity: '',
     status: '',
+    projectLocation: '',
+    pdf: null as File | null,
   });
   const [submitting, setSubmitting] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
@@ -51,9 +55,11 @@ export default function OngoingResearchPage() {
         budgetAllocation: editingResearch.budgetAllocation,
         commodity: editingResearch.commodity,
         status: editingResearch.status,
+        projectLocation: editingResearch.projectLocation || '',
+        pdf: null,
       });
     } else {
-      setFormData({ title: '', proponents: '', fundingSource: '', projectDuration: '', budgetAllocation: '', commodity: '', status: '' });
+      setFormData({ title: '', proponents: '', fundingSource: '', projectDuration: '', budgetAllocation: '', commodity: '', status: '', projectLocation: '', pdf: null });
     }
   }, [editingResearch]);
 
@@ -103,22 +109,32 @@ export default function OngoingResearchPage() {
       const method = editingResearch ? 'PUT' : 'POST';
       const url = editingResearch ? `/api/ongoing-research/${editingResearch.id}` : '/api/ongoing-research';
 
+      const formDataToSend = new FormData();
+      formDataToSend.append('userId', 'current-user'); // Assuming current user
+      formDataToSend.append('title', formData.title);
+      formDataToSend.append('proponents', formData.proponents);
+      formDataToSend.append('fundingSource', formData.fundingSource);
+      formDataToSend.append('projectDuration', formData.projectDuration);
+      formDataToSend.append('budgetAllocation', formData.budgetAllocation);
+      formDataToSend.append('commodity', formData.commodity);
+      formDataToSend.append('status', formData.status);
+      formDataToSend.append('projectLocation', formData.projectLocation);
+      if (formData.pdf) {
+        formDataToSend.append('pdf', formData.pdf);
+      }
+
       const res = await fetch(url, {
         method,
         headers: {
-          'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`,
         },
-        body: JSON.stringify({
-          ...(editingResearch ? {} : { userId: 'current-user' }), // Assuming current user
-          ...formData,
-        }),
+        body: formDataToSend,
       });
 
       if (res.ok) {
         setShowModal(false);
         setEditingResearch(null);
-        setFormData({ title: '', proponents: '', fundingSource: '', projectDuration: '', budgetAllocation: '', commodity: '', status: '' });
+        setFormData({ title: '', proponents: '', fundingSource: '', projectDuration: '', budgetAllocation: '', commodity: '', status: '', projectLocation: '', pdf: null });
         fetchResearches();
       } else {
         alert(`Failed to ${editingResearch ? 'update' : 'create'} research`);
@@ -133,8 +149,8 @@ export default function OngoingResearchPage() {
 
 
   return (
-    <div className="min-h-screen bg-gray-100 p-6 pt-24">
-      <div className="max-w-7xl mx-auto">
+    <div className="min-h-screen bg-gray-100 p-4 pt-24">
+      <div className="w-full px-4">
         {/* Header */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-10 gap-4">
           <h1 className="text-3xl font-bold text-black">Ongoing Research</h1>
@@ -177,6 +193,7 @@ export default function OngoingResearchPage() {
                   <th className="px-6 py-3 text-left">Budget Allocation</th>
                   <th className="px-6 py-3 text-left">Commodity</th>
                   <th className="px-6 py-3 text-left">Status</th>
+                  <th className="px-6 py-3 text-left">Project Location</th>
                   <th className="px-6 py-3 text-left">Actions</th>
                 </tr>
               </thead>
@@ -198,9 +215,20 @@ export default function OngoingResearchPage() {
                     <td className="px-6 py-4 text-black">{research.budgetAllocation}</td>
                     <td className="px-6 py-4 text-black">{research.commodity}</td>
                     <td className="px-6 py-4 text-black">{research.status}</td>
+                    <td className="px-6 py-4 text-black">{research.projectLocation || '-'}</td>
                     <td className="px-6 py-4 text-black">{research.subResearches.length}</td>
                     <td className="px-6 py-4">
                       <div className="flex gap-2">
+                        {research.pdf && (
+                          <a
+                            href={research.pdf}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="px-3 py-1 bg-green-600 text-white text-sm rounded hover:bg-green-700"
+                          >
+                            View PDF
+                          </a>
+                        )}
                         <Link
                           href={`/sub-ongoing-research?ongoingResearchId=${research.id}`}
                           className="px-3 py-1 bg-blue-600 text-white text-sm rounded hover:bg-blue-700"
@@ -226,7 +254,7 @@ export default function OngoingResearchPage() {
                 ))}
                 {researches.length === 0 && (
                   <tr>
-                    <td colSpan={8} className="px-6 py-8 text-center text-black/60">
+                    <td colSpan={9} className="px-6 py-8 text-center text-black/60">
                       No ongoing research found
                     </td>
                   </tr>
@@ -341,6 +369,30 @@ export default function OngoingResearchPage() {
                   onChange={(e) => setFormData({ ...formData, status: e.target.value })}
                   className="w-full border rounded-md px-3 py-2 mt-1 placeholder-black text-black"
                   required
+                />
+              </div>
+
+              <div>
+                <label className="text-sm font-medium text-black">
+                  Project Location
+                </label>
+                <input
+                  type="text"
+                  value={formData.projectLocation}
+                  onChange={(e) => setFormData({ ...formData, projectLocation: e.target.value })}
+                  className="w-full border rounded-md px-3 py-2 mt-1 placeholder-black text-black"
+                />
+              </div>
+
+              <div>
+                <label className="text-sm font-medium text-black">
+                  PDF File
+                </label>
+                <input
+                  type="file"
+                  accept=".pdf"
+                  onChange={(e) => setFormData({ ...formData, pdf: e.target.files?.[0] || null })}
+                  className="w-full border rounded-md px-3 py-2 mt-1 text-black"
                 />
               </div>
 

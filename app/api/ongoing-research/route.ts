@@ -1,12 +1,35 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
+import { writeFile } from 'fs/promises';
+import path from 'path';
 
 export async function POST(request: NextRequest) {
   try {
-    const { userId, title, proponents, fundingSource, projectDuration, budgetAllocation, commodity, status } = await request.json();
+    const formData = await request.formData();
+
+    const userId = formData.get('userId') as string;
+    const title = formData.get('title') as string;
+    const proponents = formData.get('proponents') as string;
+    const fundingSource = formData.get('fundingSource') as string;
+    const projectDuration = formData.get('projectDuration') as string;
+    const budgetAllocation = formData.get('budgetAllocation') as string;
+    const commodity = formData.get('commodity') as string;
+    const status = formData.get('status') as string;
+    const projectLocation = formData.get('projectLocation') as string;
+    const pdfFile = formData.get('pdf') as File | null;
 
     if (!userId || !title || !proponents || !fundingSource || !projectDuration || !budgetAllocation || !commodity || !status) {
-      return NextResponse.json({ error: 'All fields are required' }, { status: 400 });
+      return NextResponse.json({ error: 'All required fields are required' }, { status: 400 });
+    }
+
+    let pdfPath: string | undefined;
+    if (pdfFile) {
+      const bytes = await pdfFile.arrayBuffer();
+      const buffer = Buffer.from(bytes);
+      const filename = `${Date.now()}-${pdfFile.name}`;
+      const filepath = path.join(process.cwd(), 'public', 'uploads', filename);
+      await writeFile(filepath, buffer);
+      pdfPath = `/uploads/${filename}`;
     }
 
     const research = await prisma.ongoingResearch.create({
@@ -19,6 +42,8 @@ export async function POST(request: NextRequest) {
         budgetAllocation,
         commodity,
         status,
+        projectLocation,
+        pdf: pdfPath,
       },
     });
 

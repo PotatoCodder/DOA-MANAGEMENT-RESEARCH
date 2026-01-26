@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
+import { writeFile } from 'fs/promises';
+import path from 'path';
 
 export async function GET(
   request: NextRequest,
@@ -40,19 +42,42 @@ export async function PUT(
       return NextResponse.json({ error: 'Invalid ID' }, { status: 400 });
     }
 
-    const { title, proponents, fundingSource, projectDuration, budgetAllocation, commodity, status } = await request.json();
+    const formData = await request.formData();
+
+    const title = formData.get('title') as string;
+    const proponents = formData.get('proponents') as string;
+    const fundingSource = formData.get('fundingSource') as string;
+    const projectDuration = formData.get('projectDuration') as string;
+    const budgetAllocation = formData.get('budgetAllocation') as string;
+    const commodity = formData.get('commodity') as string;
+    const status = formData.get('status') as string;
+    const projectLocation = formData.get('projectLocation') as string;
+    const pdfFile = formData.get('pdf') as File | null;
+
+    let pdfPath: string | undefined;
+    if (pdfFile) {
+      const bytes = await pdfFile.arrayBuffer();
+      const buffer = Buffer.from(bytes);
+      const filename = `${Date.now()}-${pdfFile.name}`;
+      const filepath = path.join(process.cwd(), 'public', 'uploads', filename);
+      await writeFile(filepath, buffer);
+      pdfPath = `/uploads/${filename}`;
+    }
+
+    const data: any = {};
+    if (title) data.title = title;
+    if (proponents) data.proponents = proponents;
+    if (fundingSource) data.fundingSource = fundingSource;
+    if (projectDuration) data.projectDuration = projectDuration;
+    if (budgetAllocation) data.budgetAllocation = budgetAllocation;
+    if (commodity) data.commodity = commodity;
+    if (status) data.status = status;
+    if (projectLocation !== undefined) data.projectLocation = projectLocation;
+    if (pdfPath) data.pdf = pdfPath;
 
     const research = await prisma.ongoingResearch.update({
       where: { id: researchId },
-      data: {
-        ...(title && { title }),
-        ...(proponents && { proponents }),
-        ...(fundingSource && { fundingSource }),
-        ...(projectDuration && { projectDuration }),
-        ...(budgetAllocation && { budgetAllocation }),
-        ...(commodity && { commodity }),
-        ...(status && { status }),
-      },
+      data,
     });
 
     return NextResponse.json(research);
