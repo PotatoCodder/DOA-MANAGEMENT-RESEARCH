@@ -1,12 +1,12 @@
 'use client';
 
 import { useState } from 'react';
-import { User } from 'lucide-react';
+import { User, X } from 'lucide-react';
 
 export default function LoginModal() {
   const [isOpen, setIsOpen] = useState(false);
-  const [mode, setMode] = useState<'admin' | 'employee'>('admin');
-  const [action, setAction] = useState<'login' | 'signup'>('login');
+  const [userType, setUserType] = useState<'admin' | 'employee'>('employee');
+  const [isSignup, setIsSignup] = useState(false);
   const [formData, setFormData] = useState({
     identifier: '',
     password: '',
@@ -19,6 +19,29 @@ export default function LoginModal() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
+  const resetForm = () => {
+    setFormData({
+      identifier: '',
+      password: '',
+      fullName: '',
+      email: '',
+      employeeId: '',
+      mobileNumber: '',
+      Email: ''
+    });
+    setError('');
+  };
+
+  const handleClose = () => {
+    setIsOpen(false);
+    resetForm();
+  };
+
+  const toggleMode = () => {
+    setIsSignup(!isSignup);
+    resetForm();
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -27,14 +50,14 @@ export default function LoginModal() {
     let endpoint: string;
     let body: any;
 
-    if (action === 'login') {
-      endpoint = mode === 'admin' ? '/api/auth/admin/login' : '/api/auth/employee/login';
-      body = mode === 'admin'
+    if (!isSignup) {
+      endpoint = userType === 'admin' ? '/api/auth/admin/login' : '/api/auth/employee/login';
+      body = userType === 'admin'
         ? { userName: formData.identifier, password: formData.password }
         : { email: formData.identifier, password: formData.password };
     } else {
-      endpoint = mode === 'admin' ? '/api/auth/admin/sign-up' : '/api/auth/employee/sign-up';
-      if (mode === 'admin') {
+      endpoint = userType === 'admin' ? '/api/auth/admin/sign-up' : '/api/auth/employee/sign-up';
+      if (userType === 'admin') {
         body = {
           userName: formData.identifier,
           password: formData.password,
@@ -62,22 +85,22 @@ export default function LoginModal() {
       const data = await res.json();
 
       if (res.ok) {
-        if (action === 'login') {
+        if (!isSignup) {
           localStorage.setItem('token', data.token);
-          localStorage.setItem('role', mode);
-          setIsOpen(false);
+          localStorage.setItem('role', userType);
+          handleClose();
           alert('Login successful!');
-          window.location.reload(); // Refresh to update navbar
+          window.location.reload();
         } else {
-          setIsOpen(false);
+          handleClose();
           alert('Sign-up successful! Please login.');
-          setAction('login');
+          setIsSignup(false);
         }
       } else {
-        setError(data.error || `${action === 'login' ? 'Login' : 'Sign-up'} failed`);
+        setError(data.error || `${isSignup ? 'Sign-up' : 'Login'} failed`);
       }
     } catch (err) {
-      setError('Network error');
+      setError('Network error. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -87,192 +110,242 @@ export default function LoginModal() {
     <>
       <button
         onClick={() => setIsOpen(true)}
-        className="fixed top-24 right-8 bg-green-600 text-white px-4 py-4 rounded-full hover:bg-green-700 z-50"
+        className="fixed top-24 right-8 bg-slate-800 text-white p-4 rounded-full hover:bg-slate-700 shadow-lg transition-all hover:shadow-xl z-50"
+        aria-label="Login"
       >
-        {<User />}
+        <User size={24} />
       </button>
 
       {isOpen && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4">
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <h2 className="text-xl font-bold text-gray-800 text-center">
-                {mode === 'admin' ? 'Admin' : 'Employee'} {action === 'login' ? 'Login' : 'Sign-up'}
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl w-full max-w-md max-h-[90vh] overflow-y-auto shadow-2xl relative animate-in fade-in zoom-in duration-200">
+            {/* Close Button */}
+            <button
+              onClick={handleClose}
+              className="absolute top-4 right-4 text-slate-400 hover:text-slate-600 transition-colors"
+              aria-label="Close"
+            >
+              <X size={24} />
+            </button>
+
+            {/* Header */}
+            <div className="bg-gradient-to-r from-green-800 to-green-900 text-white p-6 rounded-t-2xl">
+              <h2 className="text-2xl font-bold text-center">
+                {isSignup ? 'Create Account' : 'Welcome Back'}
               </h2>
+              <p className="text-center text-slate-300 text-sm mt-1">
+                {isSignup ? 'Sign up to get started' : 'Login to continue'}
+              </p>
+            </div>
 
-              {/* Action Toggle */}
-              <div className="flex gap-2 mb-4">
-                <button
-                  type="button"
-                  onClick={() => setAction('login')}
-                  className={`flex-1 py-2 rounded-md font-medium ${
-                    action === 'login'
-                      ? 'bg-green-600 text-white'
-                      : 'bg-gray-200 text-gray-600 hover:bg-gray-300'
-                  }`}
-                >
-                  Login
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setAction('signup')}
-                  className={`flex-1 py-2 rounded-md font-medium ${
-                    action === 'signup'
-                      ? 'bg-green-600 text-white'
-                      : 'bg-gray-200 text-gray-600 hover:bg-gray-300'
-                  }`}
-                >
-                  Sign-up
-                </button>
-              </div>
-
-              {/* Mode Toggle */}
-              <div className="flex gap-2 mb-4">
-                <button
-                  type="button"
-                  onClick={() => setMode('admin')}
-                  className={`flex-1 py-2 rounded-md font-medium ${
-                    mode === 'admin'
-                      ? 'bg-yellow-400 text-gray-900'
-                      : 'bg-gray-200 text-gray-600 hover:bg-gray-300'
-                  }`}
-                >
-                  Admin
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setMode('employee')}
-                  className={`flex-1 py-2 rounded-md font-medium ${
-                    mode === 'employee'
-                      ? 'bg-yellow-400 text-gray-900'
-                      : 'bg-gray-200 text-gray-600 hover:bg-gray-300'
-                  }`}
-                >
-                  Employee
-                </button>
+            <form onSubmit={handleSubmit} className="p-6 space-y-5">
+              {/* User Type Selection */}
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-3">
+                  I am a/an:
+                </label>
+                <div className="grid grid-cols-2 gap-3">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setUserType('employee');
+                      resetForm();
+                    }}
+                    className={`py-3 px-4 rounded-lg font-medium transition-all ${
+                      userType === 'employee'
+                        ? 'bg-green-600 text-white shadow-md'
+                        : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                    }`}
+                  >
+                    Employee
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setUserType('admin');
+                      resetForm();
+                    }}
+                    className={`py-3 px-4 rounded-lg font-medium transition-all ${
+                      userType === 'admin'
+                        ? 'bg-green-600 text-white shadow-md'
+                        : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                    }`}
+                  >
+                    Admin
+                  </button>
+                </div>
               </div>
 
               {error && (
-                <p className="text-red-600 text-sm text-center">
+                <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">
                   {error}
-                </p>
+                </div>
               )}
 
-              {/* Identifier Input */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  {mode === 'admin' ? 'Username' : 'Email'}
-                </label>
-                <input
-                  type={mode === 'admin' ? 'text' : 'email'}
-                  value={formData.identifier}
-                  onChange={(e) => setFormData({ ...formData, identifier: e.target.value })}
-                  required
-                  className="text-black w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 placeholder-black"
-                />
-              </div>
-
-              {/* Password Input */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Password
-                </label>
-                <input
-                  type="password"
-                  value={formData.password}
-                  onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                  required
-                  className="text-black w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 placeholder-black"
-                />
-              </div>
-
-              {/* Additional fields for sign-up */}
-              {action === 'signup' && (
+              {/* Login Fields */}
+              {!isSignup ? (
                 <>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      {userType === 'admin' ? 'Username' : 'Email Address'}
+                    </label>
+                    <input
+                      type={userType === 'admin' ? 'text' : 'email'}
+                      value={formData.identifier}
+                      onChange={(e) => setFormData({ ...formData, identifier: e.target.value })}
+                      placeholder={userType === 'admin' ? 'Enter your username' : 'Enter your email'}
+                      required
+                      className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent text-gray-900 bg-white"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Password
+                    </label>
+                    <input
+                      type="password"
+                      value={formData.password}
+                      onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                      placeholder="Enter your password"
+                      required
+                      className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-gray-900 bg-white"
+                    />
+                  </div>
+                </>
+              ) : (
+                // Signup Fields
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
                       Full Name
                     </label>
                     <input
                       type="text"
                       value={formData.fullName}
                       onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
+                      placeholder="Enter your full name"
                       required
-                      className="text-black w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 placeholder-black"
+                      className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-gray-900 bg-white"
                     />
                   </div>
 
-                  {mode === 'admin' ? (
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Email
-                      </label>
-                      <input
-                        type="email"
-                        value={formData.Email}
-                        onChange={(e) => setFormData({ ...formData, Email: e.target.value })}
-                        required
-                        className="text-black w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 placeholder-black"
-                      />
-                    </div>
+                  {userType === 'admin' ? (
+                    <>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Username
+                        </label>
+                        <input
+                          type="text"
+                          value={formData.identifier}
+                          onChange={(e) => setFormData({ ...formData, identifier: e.target.value })}
+                          placeholder="Choose a username"
+                          required
+                          className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-gray-900 bg-white"
+                        />
+                      </div>
+                      <div className="col-span-2">
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Email Address
+                        </label>
+                        <input
+                          type="email"
+                          value={formData.Email}
+                          onChange={(e) => setFormData({ ...formData, Email: e.target.value })}
+                          placeholder="Enter your email"
+                          required
+                          className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-gray-900 bg-white"
+                        />
+                      </div>
+                    </>
                   ) : (
                     <>
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
                           Employee ID
                         </label>
                         <input
                           type="text"
                           value={formData.employeeId}
                           onChange={(e) => setFormData({ ...formData, employeeId: e.target.value })}
+                          placeholder="Enter your employee ID"
                           required
-                          className="text-black w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 placeholder-black"
+                          className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-gray-900 bg-white"
                         />
                       </div>
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                          Email
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Email Address
                         </label>
                         <input
                           type="email"
                           value={formData.email}
                           onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                          placeholder="Enter your email"
                           required
-                          className="text-black w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 placeholder-black"
+                          className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-gray-900 bg-white"
                         />
                       </div>
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
                           Mobile Number
                         </label>
                         <input
-                          type="text"
+                          type="tel"
                           value={formData.mobileNumber}
                           onChange={(e) => setFormData({ ...formData, mobileNumber: e.target.value })}
+                          placeholder="Enter your mobile number"
                           required
-                          className="text-black w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 placeholder-black"
+                          className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-gray-900 bg-white"
                         />
                       </div>
                     </>
                   )}
-                </>
+
+                  <div className="col-span-2">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Password
+                    </label>
+                    <input
+                      type="password"
+                      value={formData.password}
+                      onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                      placeholder="Create a password"
+                      required
+                      className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-gray-900 bg-white"
+                    />
+                  </div>
+                </div>
               )}
 
-              {/* Action Buttons */}
-              <div className="flex gap-2 pt-2">
+              {/* Submit Button */}
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full bg-green-600 text-white py-3 rounded-lg font-semibold hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-md hover:shadow-lg"
+              >
+                {loading ? (
+                  <span className="flex items-center justify-center">
+                    <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    {isSignup ? 'Creating Account...' : 'Logging In...'}
+                  </span>
+                ) : (
+                  isSignup ? 'Create Account' : 'Login'
+                )}
+              </button>
+
+              {/* Toggle between Login/Signup */}
+              <div className="text-center pt-2">
                 <button
                   type="button"
-                  onClick={() => setIsOpen(false)}
-                  className="flex-1 bg-gray-200 text-gray-700 py-2 rounded-md hover:bg-gray-300"
+                  onClick={toggleMode}
+                  className="text-green-600 hover:text-green-700 font-medium text-sm transition-colors"
                 >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={loading}
-                  className="flex-1 bg-green-600 text-white py-2 rounded-md hover:bg-green-700 disabled:opacity-50"
-                >
-                  {loading ? (action === 'login' ? 'Logging in...' : 'Signing up...') : `${action === 'login' ? 'Login' : 'Sign-up'} as ${mode === 'admin' ? 'Admin' : 'Employee'}`}
+                  {isSignup ? 'Already have an account? Login' : "Don't have an account? Sign up"}
                 </button>
               </div>
             </form>
