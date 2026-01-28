@@ -3,9 +3,9 @@ import prisma from '@/lib/prisma';
 
 export async function POST(request: NextRequest) {
   try {
-    const { userId, objectives, actualAccomplishment, dateConducted, documentation, ongoingResearchId, targetActivities } = await request.json();
+    const { userId, objectives, actualAccomplishment, dateConducted, remarks, documentation, ongoingResearchId, targetActivities } = await request.json();
 
-    if (!userId || !objectives || !actualAccomplishment || !dateConducted || !documentation || !ongoingResearchId) {
+    if (!userId || !objectives || !actualAccomplishment || !dateConducted || !remarks || !documentation || !ongoingResearchId) {
       return NextResponse.json({ error: 'All required fields are required' }, { status: 400 });
     }
 
@@ -15,6 +15,7 @@ export async function POST(request: NextRequest) {
         objectives,
         actualAccomplishment,
         dateConducted,
+        remarks,
         documentation,
         ongoingResearchId: parseInt(ongoingResearchId),
         ...(targetActivities && { targetActivities }),

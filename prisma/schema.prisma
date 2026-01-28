@@ -57,6 +57,7 @@ model subOngoingResearch {
   objectives            String
   actualAccomplishment  String
   dateConducted         String
+  remarks               String
   documentation         String
   targetActivities      String?
 

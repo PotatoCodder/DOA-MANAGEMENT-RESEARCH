@@ -10,6 +10,7 @@ interface SubOngoingResearch {
   objectives: string;
   actualAccomplishment: string;
   dateConducted: string;
+  remarks: string;
   documentation: string;
   targetActivities?: string;
   ongoingResearchId: number;
@@ -49,6 +50,7 @@ export default function SubOngoingResearchPage() {
     objectives: `Objective ${researches.length + 1}`,
     actualAccomplishment: '',
     dateConducted: '',
+    remarks: '',
     documentation: '',
   });
   const [submitting, setSubmitting] = useState(false);
@@ -158,7 +160,7 @@ export default function SubOngoingResearchPage() {
 
       if (res.ok) {
         setShowCreateModal(false);
-        setFormData({ objectives: '', actualAccomplishment: '', dateConducted: '', documentation: '' });
+        setFormData({ objectives: '', actualAccomplishment: '', dateConducted: '', remarks: '', documentation: '' });
         fetchResearches();
       } else {
         alert('Failed to create sub research');
@@ -454,6 +456,7 @@ export default function SubOngoingResearchPage() {
                   <th className="px-6 py-3 text-left">Objectives</th>
                   <th className="px-6 py-3 text-left">Actual Accomplishment</th>
                   <th className="px-6 py-3 text-left">Date Conducted</th>
+                  <th className="px-6 py-3 text-left">Remarks</th>
                   <th className="px-6 py-3 text-left">Actions</th>
                 </tr>
               </thead>
@@ -467,6 +470,7 @@ export default function SubOngoingResearchPage() {
                     <td className="px-6 py-4 text-black">{research.objectives}</td>
                     <td className="px-6 py-4 text-black">{research.actualAccomplishment}</td>
                     <td className="px-6 py-4 text-black">{research.dateConducted}</td>
+                    <td className="px-6 py-4 text-black">{research.remarks}</td>
                     <td className="px-6 py-4">
                       <div className="flex gap-2">
                         {research.documentation && (
@@ -695,6 +699,18 @@ export default function SubOngoingResearchPage() {
                 />
               </div>
 
+              <div>
+                <label className="text-sm font-medium text-black">
+                  Remarks
+                </label>
+                <textarea
+                  value={formData.remarks}
+                  onChange={(e) => setFormData({ ...formData, remarks: e.target.value })}
+                  className="text-black w-full border rounded-md px-3 py-2 mt-1 placeholder-black"
+                  placeholder="Enter remarks"
+                  required
+                />
+              </div>
 
               <div>
                 <label className="text-sm font-medium text-black">
