@@ -101,6 +101,26 @@ model infographics {
   image      String @db.Text
 }
 
+model Announcement {
+  id            Int     @id @default(autoincrement())
+  userid        String
+  content       String
+  updatedAt     DateTime  @default(now())
+
+  @@map("announcment")
+}
+
+model RecentActivity {
+  id            Int     @id @default(autoincrement())
+  userId        String
+  title         String
+  activities    String
+  updatedAt     DateTime  @default(now())
+  createdAt     DateTime  @default(now())
+
+  @@map("recentActivity")
+}
+
 model researchProposal {
   id            Int      @id @default(autoincrement())
   userid        String

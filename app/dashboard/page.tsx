@@ -156,9 +156,13 @@ const DashboardPage = () => {
                   <button
                     onClick={async () => {
                       try {
+                        const token = localStorage.getItem('token');
                         const response = await fetch('/api/dashboard', {
                           method: 'PUT',
-                          headers: { 'Content-Type': 'application/json' },
+                          headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${token}`
+                          },
                           body: JSON.stringify({
                             ...dashboardData,
                             recentActivity: tempActivity.filter(item => item.trim() !== ''),
@@ -243,9 +247,13 @@ const DashboardPage = () => {
                   <button
                     onClick={async () => {
                       try {
+                        const token = localStorage.getItem('token');
                         const response = await fetch('/api/dashboard', {
                           method: 'PUT',
-                          headers: { 'Content-Type': 'application/json' },
+                          headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${token}`
+                          },
                           body: JSON.stringify({
                             ...dashboardData,
                             announcements: tempAnnouncements.filter(item => item.trim() !== ''),

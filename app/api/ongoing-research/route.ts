@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
-import { writeFile } from 'fs/promises';
+import { writeFile, mkdir } from 'fs/promises';
 import path from 'path';
 import { verifyJWT } from '@/lib/jwt';
 
@@ -38,12 +38,27 @@ export async function POST(request: NextRequest) {
 
     let pdfPath: string | undefined;
     if (pdfFile) {
-      const bytes = await pdfFile.arrayBuffer();
-      const buffer = Buffer.from(bytes);
-      const filename = `${Date.now()}-${pdfFile.name}`;
-      const filepath = path.join(process.cwd(), 'public', 'uploads', filename);
-      await writeFile(filepath, buffer);
-      pdfPath = `/uploads/${filename}`;
+      try {
+        const bytes = await pdfFile.arrayBuffer();
+        const buffer = Buffer.from(bytes);
+        const filename = `${Date.now()}-${pdfFile.name}`;
+        const uploadDir = path.join(process.cwd(), 'public', 'uploads');
+        const filepath = path.join(uploadDir, filename);
+
+        // Ensure the uploads directory exists
+        try {
+          await mkdir(uploadDir, { recursive: true });
+        } catch (mkdirError) {
+          console.error('Failed to create uploads directory:', mkdirError);
+          // Continue, might still work if directory exists
+        }
+
+        await writeFile(filepath, buffer);
+        pdfPath = `/uploads/${filename}`;
+      } catch (fileError) {
+        console.error('Failed to save PDF file:', fileError);
+        return NextResponse.json({ error: 'Failed to upload PDF file' }, { status: 500 });
+      }
     }
 
     const research = await prisma.ongoingResearch.create({
