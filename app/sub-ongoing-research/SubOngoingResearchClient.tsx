@@ -21,7 +21,8 @@ interface SubOngoingResearch {
 interface TargetActivity {
   id: number;
   targetActivity: string;
-  date?: string;
+  startDate?: string;
+  endDate?: string;
   objectivesId: number;
 }
 
@@ -63,9 +64,10 @@ export default function SubOngoingResearchPage() {
   });
   const [targetFormData, setTargetFormData] = useState({
     targetActivity: '',
-    date: '',
+    startDate: '',
+    endDate: '',
   });
-  const [targetActivitiesList, setTargetActivitiesList] = useState<{targetActivity: string, date: string}[]>([]);
+  const [targetActivitiesList, setTargetActivitiesList] = useState<{targetActivity: string, startDate: string, endDate: string}[]>([]);
   const [editingObjective, setEditingObjective] = useState<Objective | null>(null);
 
   useEffect(() => {
@@ -217,7 +219,8 @@ export default function SubOngoingResearchPage() {
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({
                 targetActivity: target.targetActivity,
-                date: target.date ? new Date(target.date) : null,
+                startDate: target.startDate ? new Date(target.startDate) : null,
+                endDate: target.endDate ? new Date(target.endDate) : null,
                 objectivesId: objectiveId
               })
             });
@@ -240,7 +243,7 @@ export default function SubOngoingResearchPage() {
 
   const handleAddToList = () => {
     setTargetActivitiesList([...targetActivitiesList, targetFormData]);
-    setTargetFormData({ targetActivity: '', date: '' });
+    setTargetFormData({ targetActivity: '', startDate: '', endDate: '' });
   };
 
   const handleCreateTarget = async (e: React.FormEvent) => {
@@ -334,7 +337,7 @@ export default function SubOngoingResearchPage() {
                 <tr>
                   <th className="px-6 py-3 text-left">Objectives</th>
                   <th className="px-6 py-3 text-left">Target Activities</th>
-                  <th className="px-6 py-3 text-left">Date</th>
+                  <th className="px-6 py-3 text-left">Date Range</th>
                   <th className="px-6 py-3 text-left">Actions</th>
                 </tr>
               </thead>
@@ -347,7 +350,7 @@ export default function SubOngoingResearchPage() {
                           <>
                             <td className="px-6 py-4 text-black" rowSpan={objective.targetActivityList.length}>{objective.objectives}</td>
                             <td className="px-6 py-4 text-black">{(index + 1) + '. ' + ta.targetActivity}</td>
-                            <td className="px-6 py-4 text-black">{ta.date ? new Date(ta.date).toLocaleDateString() : '-'}</td>
+                            <td className="px-6 py-4 text-black">{ta.startDate && ta.endDate ? `${new Date(ta.startDate).toLocaleDateString()} to ${new Date(ta.endDate).toLocaleDateString()}` : '-'}</td>
                             <td className="px-6 py-4" rowSpan={objective.targetActivityList.length}>
                               {userRole === 'admin' && (
                                 <div className="flex gap-2">
@@ -377,7 +380,7 @@ export default function SubOngoingResearchPage() {
                         {index > 0 && (
                           <>
                             <td className="px-6 py-4 text-black">{(index + 1) + '. ' + ta.targetActivity}</td>
-                            <td className="px-6 py-4 text-black">{ta.date ? new Date(ta.date).toLocaleDateString() : '-'}</td>
+                            <td className="px-6 py-4 text-black">{ta.startDate && ta.endDate ? `${new Date(ta.startDate).toLocaleDateString()} to ${new Date(ta.endDate).toLocaleDateString()}` : '-'}</td>
                           </>
                         )}
                       </tr>
@@ -576,12 +579,24 @@ export default function SubOngoingResearchPage() {
                 </div>
                 <div>
                   <label className="text-sm font-medium text-black">
-                    Date
+                    Start Date
                   </label>
                   <input
                     type="date"
-                    value={targetFormData.date}
-                    onChange={(e) => setTargetFormData({ ...targetFormData, date: e.target.value })}
+                    value={targetFormData.startDate}
+                    onChange={(e) => setTargetFormData({ ...targetFormData, startDate: e.target.value })}
+                    className="w-full border rounded-md px-3 py-2 mt-1 text-black"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-black">
+                    End Date
+                  </label>
+                  <input
+                    type="date"
+                    value={targetFormData.endDate}
+                    onChange={(e) => setTargetFormData({ ...targetFormData, endDate: e.target.value })}
                     className="w-full border rounded-md px-3 py-2 mt-1 text-black"
                     required
                   />
@@ -604,7 +619,7 @@ export default function SubOngoingResearchPage() {
                 </div>
                 <ul className="space-y-2">
                   {targetActivitiesList.map((item, index) => (
-                    <li key={index} className="text-black">{(index + 1) + '. ' + item.targetActivity} ({item.date})</li>
+                    <li key={index} className="text-black">{(index + 1) + '. ' + item.targetActivity} ({item.startDate} to {item.endDate})</li>
                   ))}
                 </ul>
                 <button

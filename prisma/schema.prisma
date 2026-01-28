@@ -123,7 +123,8 @@ model Objectives {
 model TargetActivities {
   id Int @id @default(autoincrement())
   targetActivity String
-  date DateTime?
+  startDate DateTime?
+  endDate DateTime?
   objectivesId Int
   objectives Objectives @relation(fields: [objectivesId], references: [id])
 }

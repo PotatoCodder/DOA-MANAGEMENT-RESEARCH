@@ -2,12 +2,26 @@ import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { writeFile } from 'fs/promises';
 import path from 'path';
+import { verifyJWT } from '@/lib/jwt';
 
 export async function POST(request: NextRequest) {
   try {
+    const authHeader = request.headers.get('authorization');
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const token = authHeader.split(' ')[1];
+    const payload = await verifyJWT(token);
+
+    if (!payload || !payload.role) {
+      return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
+    }
+
+    const { id: userId } = payload as { id: number; role: string };
+
     const formData = await request.formData();
 
-    const userId = formData.get('userId') as string;
     const title = formData.get('title') as string;
     const proponents = formData.get('proponents') as string;
     const fundingSource = formData.get('fundingSource') as string;
@@ -18,7 +32,7 @@ export async function POST(request: NextRequest) {
     const projectLocation = formData.get('projectLocation') as string;
     const pdfFile = formData.get('pdf') as File | null;
 
-    if (!userId || !title || !proponents || !fundingSource || !projectDuration || !budgetAllocation || !commodity || !status) {
+    if (!title || !proponents || !fundingSource || !projectDuration || !budgetAllocation || !commodity || !status) {
       return NextResponse.json({ error: 'All required fields are required' }, { status: 400 });
     }
 
@@ -34,7 +48,7 @@ export async function POST(request: NextRequest) {
 
     const research = await prisma.ongoingResearch.create({
       data: {
-        userId,
+        userId: userId.toString(),
         title,
         proponents,
         fundingSource,

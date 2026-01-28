@@ -17,11 +17,12 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   const body = await request.json();
-  const { targetActivity, date, objectivesId } = body;
+  const { targetActivity, startDate, endDate, objectivesId } = body;
   const newTarget = await prisma.targetActivities.create({
     data: {
       targetActivity,
-      date: (date && date !== '') ? new Date(date) : null,
+      startDate: (startDate && startDate !== '') ? new Date(startDate) : null,
+      endDate: (endDate && endDate !== '') ? new Date(endDate) : null,
       objectivesId
     }
   });

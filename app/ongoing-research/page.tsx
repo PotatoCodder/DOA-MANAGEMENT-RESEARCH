@@ -110,7 +110,6 @@ export default function OngoingResearchPage() {
       const url = editingResearch ? `/api/ongoing-research/${editingResearch.id}` : '/api/ongoing-research';
 
       const formDataToSend = new FormData();
-      formDataToSend.append('userId', 'current-user'); // Assuming current user
       formDataToSend.append('title', formData.title);
       formDataToSend.append('proponents', formData.proponents);
       formDataToSend.append('fundingSource', formData.fundingSource);
