@@ -38,6 +38,9 @@ export default function OngoingResearchPage() {
   });
   const [submitting, setSubmitting] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
+  const [showPdfModal, setShowPdfModal] = useState(false);
+  const [selectedPdf, setSelectedPdf] = useState<string | null>(null);
+  const [pdfError, setPdfError] = useState<string | null>(null);
 
   useEffect(() => {
     fetchResearches();
@@ -136,11 +139,14 @@ export default function OngoingResearchPage() {
         setFormData({ title: '', proponents: '', fundingSource: '', projectDuration: '', budgetAllocation: '', commodity: '', status: '', projectLocation: '', pdf: null });
         fetchResearches();
       } else {
-        alert(`Failed to ${editingResearch ? 'update' : 'create'} research`);
+        const errorData = await res.json();
+        const errorMessage = errorData.error || `Failed to ${editingResearch ? 'update' : 'create'} research`;
+        alert(errorMessage);
       }
     } catch (error) {
       console.error(`Error ${editingResearch ? 'updating' : 'creating'} research:`, error);
-      alert(`Error ${editingResearch ? 'updating' : 'creating'} research`);
+      const errorMessage = error instanceof Error ? error.message : `Error ${editingResearch ? 'updating' : 'creating'} research`;
+      alert(errorMessage);
     } finally {
       setSubmitting(false);
     }
@@ -219,14 +225,16 @@ export default function OngoingResearchPage() {
                     <td className="px-6 py-4">
                       <div className="flex gap-2">
                         {research.pdf && (
-                          <a
-                            href={research.pdf}
-                            target="_blank"
-                            rel="noopener noreferrer"
+                          <button
+                            onClick={() => {
+                              setSelectedPdf(research.pdf || null);
+                              setShowPdfModal(true);
+                              setPdfError(null);
+                            }}
                             className="px-3 py-1 bg-green-600 text-white text-sm rounded hover:bg-green-700"
                           >
                             View PDF
-                          </a>
+                          </button>
                         )}
                         <Link
                           href={`/sub-ongoing-research?ongoingResearchId=${research.id}`}
@@ -412,6 +420,49 @@ export default function OngoingResearchPage() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* PDF Viewer Modal */}
+      {showPdfModal && selectedPdf && (
+        <div className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center">
+          <div className="bg-white w-full max-w-4xl h-5/6 rounded-xl shadow-lg p-4 relative">
+            <button
+              onClick={() => {
+                setShowPdfModal(false);
+                setSelectedPdf(null);
+                setPdfError(null);
+              }}
+              className="absolute top-4 right-4 text-gray-500 hover:text-black z-10"
+            >
+              <X className="w-6 h-6" />
+            </button>
+
+            <h2 className="text-xl font-semibold text-black mb-4">PDF Viewer</h2>
+
+            {pdfError ? (
+              <div className="flex items-center justify-center h-full">
+                <div className="text-center">
+                  <p className="text-red-600 mb-4">{pdfError}</p>
+                  <a
+                    href={selectedPdf}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-blue-600 hover:text-blue-800 underline"
+                  >
+                    Open PDF in new tab
+                  </a>
+                </div>
+              </div>
+            ) : (
+              <iframe
+                src={selectedPdf}
+                className="w-full h-full border rounded"
+                title="PDF Viewer"
+                onError={() => setPdfError('Failed to load PDF. Please try opening it in a new tab.')}
+              />
+            )}
           </div>
         </div>
       )}

@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
-import { hashedPassword } from '@/lib/hash';
 import { signJWT } from '@/lib/jwt';
 
 export async function POST(request: NextRequest) {
@@ -24,15 +23,14 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Employee ID or email already exists' }, { status: 409 });
     }
 
-    const hashed = await hashedPassword(password);
-
+    // Store password in plain text (unhashed)
     const employee = await prisma.employee.create({
       data: {
         employeeId,
         fullName,
         email,
         mobileNumber,
-        password: hashed,
+        password: password, // Store as plain text
         status: true, // assuming active
       },
     });

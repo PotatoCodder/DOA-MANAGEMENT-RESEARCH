@@ -11,7 +11,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Username and password are required' }, { status: 400 });
     }
 
-    const admin = await prisma.admin.findFirst({
+    const admin = await prisma.admin.findUnique({
       where: { userName },
     });
 
@@ -19,7 +19,16 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Invalid credentials' }, { status: 401 });
     }
 
-    const isValid = await verifyPassword(password, admin.password);
+    // Check if password is hashed (starts with $2b$ for bcrypt) or plain text
+    let isValid = false;
+    if (admin.password.startsWith('$2b$')) {
+      // Old hashed password - verify using bcrypt
+      isValid = await verifyPassword(password, admin.password);
+    } else {
+      // Plain text password - compare directly
+      isValid = password === admin.password;
+    }
+
     if (!isValid) {
       return NextResponse.json({ error: 'Invalid credentials' }, { status: 401 });
     }

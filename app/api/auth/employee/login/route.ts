@@ -19,7 +19,16 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Invalid credentials' }, { status: 401 });
     }
 
-    const isValid = await verifyPassword(password, employee.password);
+    // Check if password is hashed (starts with $2b$ for bcrypt) or plain text
+    let isValid = false;
+    if (employee.password.startsWith('$2b$')) {
+      // Old hashed password - verify using bcrypt
+      isValid = await verifyPassword(password, employee.password);
+    } else {
+      // Plain text password - compare directly
+      isValid = password === employee.password;
+    }
+
     if (!isValid) {
       return NextResponse.json({ error: 'Invalid credentials' }, { status: 401 });
     }

@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
-import { hashedPassword } from '@/lib/hash';
 import { signJWT } from '@/lib/jwt';
 
 export async function POST(request: NextRequest) {
@@ -11,7 +10,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Username and password are required' }, { status: 400 });
     }
 
-    const existingAdmin = await prisma.admin.findFirst({
+    const existingAdmin = await prisma.admin.findUnique({
       where: { userName },
     });
 
@@ -19,12 +18,11 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Username already exists' }, { status: 409 });
     }
 
-    const hashed = await hashedPassword(password);
-
+    // Store password in plain text (unhashed)
     const admin = await prisma.admin.create({
       data: {
         userName,
-        password: hashed,
+        password: password, // Store as plain text
         fullName,
         Email,
       },

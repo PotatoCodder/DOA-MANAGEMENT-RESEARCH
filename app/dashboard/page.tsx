@@ -2,10 +2,12 @@
 "use client";
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { ArrowRightIcon, FileText, Clock, CheckCircle, Leaf, BookOpen, Loader, Edit, Save, X as CloseIcon } from "lucide-react";
+import { ArrowRightIcon, FileText, Clock, CheckCircle, Leaf, BookOpen, Loader, Edit, Save, X as CloseIcon, User } from "lucide-react";
 import { X } from "lucide-react";
+import { useRouter } from "next/navigation";
 
 const DashboardPage = () => {
+    const router = useRouter();
     const [showCreateProposal, setShowCreateProposal] = useState(false);
     const [open, setOpen] = useState(false);
     const [loading, setLoading] = useState(true);
@@ -80,12 +82,23 @@ const DashboardPage = () => {
         {/* Header */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-10 gap-4">
           <h1 className="text-3xl font-bold text-black">Dashboard</h1>
-          <button
-            onClick={() => setOpen(!open)}
-            className="bg-green-700 text-white px-5 py-2 rounded-md shadow-md hover:bg-green-800 transition"
-          >
-            Create Research Proposal
-          </button>
+          <div className="flex gap-3">
+            {userRole === 'admin' && (
+              <button
+                onClick={() => router.push('/employees')}
+                className="bg-blue-700 text-white px-5 py-2 rounded-md shadow-md hover:bg-blue-800 transition flex items-center gap-2"
+              >
+                <User className="h-5 w-5" />
+                Employee Data
+              </button>
+            )}
+            <button
+              onClick={() => setOpen(!open)}
+              className="bg-green-700 text-white px-5 py-2 rounded-md shadow-md hover:bg-green-800 transition"
+            >
+              Create Research Proposal
+            </button>
+          </div>
         </div>
 
         {/* Dashboard Cards */}
