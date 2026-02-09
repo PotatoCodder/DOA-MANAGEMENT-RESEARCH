@@ -33,6 +33,7 @@ model employee {
   status       Boolean? 
   regDate      DateTime @default(now())
   updationDate DateTime? @updatedAt
+  workPlans    Objectives[]
 }
 
 model ongoingResearch {
@@ -138,6 +139,8 @@ model Objectives {
   objectives String
   targetActivities String?
   date DateTime?
+  employeeId Int
+  employee employee @relation(fields: [employeeId], references: [id])
   targetActivityList TargetActivities[]
 }
 

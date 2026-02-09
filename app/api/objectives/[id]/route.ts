@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
+import { verifyJWT } from '@/lib/jwt';
 
 export async function PUT(
   request: NextRequest,
@@ -8,13 +9,38 @@ export async function PUT(
   try {
     const { id } = await params;
     const parsedId = parseInt(id);
+
+    const authHeader = request.headers.get('authorization');
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const token = authHeader.split(' ')[1];
+    const payload = await verifyJWT(token);
+
+    if (!payload) {
+      return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
+    }
+
+    const { id: employeeId } = payload as { id: number; role: string };
+
     const body = await request.json();
-    const { objectives } = body;
+    const { objectives, targetActivities } = body;
+
+    // First check if the objective belongs to this employee
+    const existingObjective = await prisma.objectives.findFirst({
+      where: { id: parsedId, employeeId },
+    });
+
+    if (!existingObjective) {
+      return NextResponse.json({ error: 'Objective not found or unauthorized' }, { status: 404 });
+    }
 
     const updatedObjective = await prisma.objectives.update({
       where: { id: parsedId },
       data: {
-        objectives
+        objectives: objectives || existingObjective.objectives,
+        targetActivities: targetActivities !== undefined ? targetActivities : existingObjective.targetActivities,
       }
     });
 
@@ -32,6 +58,29 @@ export async function DELETE(
   try {
     const { id } = await params;
     const parsedId = parseInt(id);
+
+    const authHeader = request.headers.get('authorization');
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const token = authHeader.split(' ')[1];
+    const payload = await verifyJWT(token);
+
+    if (!payload) {
+      return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
+    }
+
+    const { id: employeeId } = payload as { id: number; role: string };
+
+    // First check if the objective belongs to this employee
+    const existingObjective = await prisma.objectives.findFirst({
+      where: { id: parsedId, employeeId },
+    });
+
+    if (!existingObjective) {
+      return NextResponse.json({ error: 'Objective not found or unauthorized' }, { status: 404 });
+    }
 
     // First delete associated target activities
     await prisma.targetActivities.deleteMany({
