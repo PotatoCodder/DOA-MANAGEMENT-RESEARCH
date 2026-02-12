@@ -6,12 +6,14 @@ export async function GET(request: NextRequest) {
   try {
     const authHeader = request.headers.get('authorization');
     let userId: string | null = null;
+    let userRole: string | null = null;
 
     if (authHeader && authHeader.startsWith('Bearer ')) {
       const token = authHeader.split(' ')[1];
       const payload = await verifyJWT(token);
       if (payload) {
         userId = (payload as { id: number; role: string }).id.toString();
+        userRole = (payload as { id: number; role: string }).role;
       }
     }
 
@@ -20,9 +22,17 @@ export async function GET(request: NextRequest) {
       return NextResponse.json([]);
     }
 
+    // Admin can see all work plans, employees can only see their own
+    const where = userRole === 'admin' ? {} : { employeeId: parseInt(userId) };
+
     const objectives = await prisma.objectives.findMany({
-      where: { employeeId: parseInt(userId) },
-      include: { targetActivityList: true },
+      where,
+      include: { 
+        targetActivityList: true,
+        employee: {
+          select: { fullName: true, employeeId: true }
+        }
+      },
       orderBy: { id: 'desc' },
     });
     return NextResponse.json(objectives);

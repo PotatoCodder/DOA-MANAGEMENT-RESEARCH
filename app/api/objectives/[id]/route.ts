@@ -22,14 +22,16 @@ export async function PUT(
       return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
     }
 
-    const { id: employeeId } = payload as { id: number; role: string };
+    const { id: employeeId, role: userRole } = payload as { id: number; role: string };
 
     const body = await request.json();
     const { objectives, targetActivities } = body;
 
-    // First check if the objective belongs to this employee
+    // Admin can update any objective, employees can only update their own
+    const where = userRole === 'admin' ? { id: parsedId } : { id: parsedId, employeeId };
+
     const existingObjective = await prisma.objectives.findFirst({
-      where: { id: parsedId, employeeId },
+      where,
     });
 
     if (!existingObjective) {
@@ -71,11 +73,13 @@ export async function DELETE(
       return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
     }
 
-    const { id: employeeId } = payload as { id: number; role: string };
+    const { id: employeeId, role: userRole } = payload as { id: number; role: string };
 
-    // First check if the objective belongs to this employee
+    // Admin can delete any objective, employees can only delete their own
+    const where = userRole === 'admin' ? { id: parsedId } : { id: parsedId, employeeId };
+
     const existingObjective = await prisma.objectives.findFirst({
-      where: { id: parsedId, employeeId },
+      where,
     });
 
     if (!existingObjective) {
