@@ -74,7 +74,7 @@ export default function SubOngoingResearchPage() {
     startDate: '',
     endDate: '',
   });
-  const [targetActivitiesList, setTargetActivitiesList] = useState<{targetActivity: string, startDate: string, endDate: string}[]>([]);
+  const [targetActivitiesList, setTargetActivitiesList] = useState<{ targetActivity: string, startDate: string, endDate: string }[]>([]);
   const [editingObjective, setEditingObjective] = useState<Objective | null>(null);
   const [currentUserId, setCurrentUserId] = useState<number | null>(null);
 
@@ -357,7 +357,6 @@ export default function SubOngoingResearchPage() {
               <thead className="bg-green-700 text-white">
                 <tr>
                   <th className="px-6 py-3 text-left">Objectives</th>
-                  <th className="px-6 py-3 text-left">Created By</th>
                   <th className="px-6 py-3 text-left">Target Activities</th>
                   <th className="px-6 py-3 text-left">Date Range</th>
                   <th className="px-6 py-3 text-left">Actions</th>
@@ -371,12 +370,6 @@ export default function SubOngoingResearchPage() {
                         {index === 0 && (
                           <>
                             <td className="px-6 py-4 text-black" rowSpan={objective.targetActivityList.length}>{objective.objectives}</td>
-                            <td className="px-6 py-4 text-black" rowSpan={objective.targetActivityList.length}>
-                              {objective.employee?.fullName || 'Unknown'}
-                              {objective.employeeId === currentUserId && (
-                                <span className="ml-2 text-xs text-blue-600">(You)</span>
-                              )}
-                            </td>
                             <td className="px-6 py-4 text-black">{(index + 1) + '. ' + ta.targetActivity}</td>
                             <td className="px-6 py-4 text-black">{ta.startDate && ta.endDate ? `${new Date(ta.startDate).toLocaleDateString()} to ${new Date(ta.endDate).toLocaleDateString()}` : '-'}</td>
                             <td className="px-6 py-4" rowSpan={objective.targetActivityList.length}>
@@ -416,12 +409,6 @@ export default function SubOngoingResearchPage() {
                   ) : (
                     <tr key={objective.id} className="border-b border-white/20 hover:bg-white/5">
                       <td className="px-6 py-4 text-black">{objective.objectives}</td>
-                      <td className="px-6 py-4 text-black">
-                        {objective.employee?.fullName || 'Unknown'}
-                        {objective.employeeId === currentUserId && (
-                          <span className="ml-2 text-xs text-blue-600">(You)</span>
-                        )}
-                      </td>
                       <td className="px-6 py-4 text-black">-</td>
                       <td className="px-6 py-4 text-black">-</td>
                       <td className="px-6 py-4">
@@ -453,7 +440,7 @@ export default function SubOngoingResearchPage() {
                 ))}
                 {objectives.length === 0 && (
                   <tr>
-                    <td colSpan={5} className="px-6 py-8 text-center text-black/60">
+                    <td colSpan={4} className="px-6 py-8 text-center text-black/60">
                       No objectives found
                     </td>
                   </tr>

@@ -22,12 +22,12 @@ export async function GET(request: NextRequest) {
       return NextResponse.json([]);
     }
 
-    // Admin can see all work plans, employees can only see their own
-    const where = userRole === 'admin' ? {} : { employeeId: parseInt(userId) };
+    // All users can only see their own work plans
+    const where = { employeeId: parseInt(userId) };
 
     const objectives = await prisma.objectives.findMany({
       where,
-      include: { 
+      include: {
         targetActivityList: true,
         employee: {
           select: { fullName: true, employeeId: true }
