@@ -77,10 +77,12 @@ export default function SubOngoingResearchPage() {
   const [targetActivitiesList, setTargetActivitiesList] = useState<{ targetActivity: string, startDate: string, endDate: string }[]>([]);
   const [editingObjective, setEditingObjective] = useState<Objective | null>(null);
   const [currentUserId, setCurrentUserId] = useState<number | null>(null);
+  const [projectTitle, setProjectTitle] = useState<string>('');
 
   useEffect(() => {
     if (ongoingResearchId) {
       fetchResearches();
+      fetchProjectTitle();
     }
     fetchObjectives();
     const role = localStorage.getItem('role');
@@ -88,6 +90,19 @@ export default function SubOngoingResearchPage() {
     setUserRole(role);
     setCurrentUserId(userId ? parseInt(userId) : null);
   }, [ongoingResearchId]);
+
+  const fetchProjectTitle = async () => {
+    try {
+      const res = await fetch('/api/ongoing-research');
+      if (res.ok) {
+        const data = await res.json();
+        const project = data.find((r: any) => r.id === parseInt(ongoingResearchId!));
+        if (project) setProjectTitle(project.title);
+      }
+    } catch (error) {
+      console.error('Failed to fetch project title:', error);
+    }
+  };
 
   useEffect(() => {
     if (objectives.length > 0) {
@@ -111,7 +126,12 @@ export default function SubOngoingResearchPage() {
 
   const fetchResearches = async () => {
     try {
-      const res = await fetch(`/api/sub-ongoing-research?ongoingResearchId=${ongoingResearchId}`);
+      const token = localStorage.getItem('token');
+      const res = await fetch(`/api/sub-ongoing-research?ongoingResearchId=${ongoingResearchId}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
       if (res.ok) {
         const data = await res.json();
         setResearches(data);
@@ -127,7 +147,7 @@ export default function SubOngoingResearchPage() {
     try {
       const token = localStorage.getItem('token');
       const userId = localStorage.getItem('id');
-      const res = await fetch('/api/objectives', {
+      const res = await fetch(`/api/objectives?ongoingResearchId=${ongoingResearchId}`, {
         headers: {
           'Authorization': `Bearer ${token}`,
         },
@@ -167,7 +187,6 @@ export default function SubOngoingResearchPage() {
           'Authorization': `Bearer ${token}`,
         },
         body: JSON.stringify({
-          userId: 'current-user', // Assuming current user
           ongoingResearchId,
           ...formData,
         }),
@@ -178,11 +197,11 @@ export default function SubOngoingResearchPage() {
         setFormData({ objectives: '', actualAccomplishment: '', dateConducted: '', remarks: '', documentation: '' });
         fetchResearches();
       } else {
-        alert('Failed to create sub research');
+        alert('Failed to create online reporting');
       }
     } catch (error) {
-      console.error('Error creating sub research:', error);
-      alert('Error creating sub research');
+      console.error('Error creating online reporting:', error);
+      alert('Error creating online reporting');
     } finally {
       setSubmitting(false);
     }
@@ -225,7 +244,10 @@ export default function SubOngoingResearchPage() {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`,
         },
-        body: JSON.stringify(objectivesFormData)
+        body: JSON.stringify({
+          ...objectivesFormData,
+          ongoingResearchId: parseInt(ongoingResearchId!),
+        })
       });
 
       if (res.ok) {
@@ -254,7 +276,8 @@ export default function SubOngoingResearchPage() {
         setObjectivesFormData({ objectives: '', targetActivities: '' });
         fetchObjectives();
       } else {
-        alert(`Failed to ${editingObjective ? 'update' : 'create'} objective`);
+        const errData = await res.json();
+        alert(errData.error || `Failed to ${editingObjective ? 'update' : 'create'} objective`);
       }
     } catch (error) {
       console.error(`Error ${editingObjective ? 'updating' : 'creating'} objective:`, error);
@@ -325,12 +348,13 @@ export default function SubOngoingResearchPage() {
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-10 gap-4">
           <div>
             <h1 className="text-3xl font-bold text-black">Sub Ongoing Research</h1>
-            {researches.length > 0 && (
-              <p className="text-gray-600 mt-2">For: {researches[0].ongoingResearch.title}</p>
+            {projectTitle && (
+              <p className="text-gray-600 mt-2">For: {projectTitle}</p>
             )}
           </div>
           <div className="flex flex-col gap-4">
-            {(userRole === 'admin' || userRole === 'employee') && (
+            {/* ADMIN ONLY: Create Work Plan */}
+            {userRole === 'admin' && (
               <button
                 onClick={() => { setShowWorkPlanModal(true); setShowObjectivesForm(true); setShowAddTargetForm(false); setShowTargetForm(false); setTargetActivitiesList([]); }}
                 className="bg-blue-700 text-white px-5 py-2 rounded-md shadow-md hover:bg-blue-800 transition"
@@ -338,6 +362,7 @@ export default function SubOngoingResearchPage() {
                 Create Work Plan
               </button>
             )}
+            {/* Admin and Employee: Create Online Reporting */}
             {(userRole === 'admin' || userRole === 'employee') && (
               <button
                 onClick={() => setShowCreateModal(true)}
@@ -373,7 +398,8 @@ export default function SubOngoingResearchPage() {
                             <td className="px-6 py-4 text-black">{(index + 1) + '. ' + ta.targetActivity}</td>
                             <td className="px-6 py-4 text-black">{ta.startDate && ta.endDate ? `${new Date(ta.startDate).toLocaleDateString()} to ${new Date(ta.endDate).toLocaleDateString()}` : '-'}</td>
                             <td className="px-6 py-4" rowSpan={objective.targetActivityList.length}>
-                              {(userRole === 'admin' || objective.employeeId === currentUserId) && (
+                              {/* Only admin can edit/delete work plans */}
+                              {userRole === 'admin' && (
                                 <div className="flex gap-2">
                                   <button
                                     onClick={() => {
@@ -412,7 +438,8 @@ export default function SubOngoingResearchPage() {
                       <td className="px-6 py-4 text-black">-</td>
                       <td className="px-6 py-4 text-black">-</td>
                       <td className="px-6 py-4">
-                        {(userRole === 'admin' || objective.employeeId === currentUserId) && (
+                        {/* Only admin can edit/delete work plans */}
+                        {userRole === 'admin' && (
                           <div className="flex gap-2">
                             <button
                               onClick={() => {

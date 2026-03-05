@@ -4,29 +4,33 @@ import { verifyJWT } from '@/lib/jwt';
 
 export async function GET(request: NextRequest) {
   try {
+    const { searchParams } = new URL(request.url);
+    const ongoingResearchId = searchParams.get('ongoingResearchId');
+
     const authHeader = request.headers.get('authorization');
     let userId: string | null = null;
-    let userRole: string | null = null;
 
     if (authHeader && authHeader.startsWith('Bearer ')) {
       const token = authHeader.split(' ')[1];
       const payload = await verifyJWT(token);
       if (payload) {
         userId = (payload as { id: number; role: string }).id.toString();
-        userRole = (payload as { id: number; role: string }).role;
       }
     }
 
-    // If no userId from token, return empty array
     if (!userId) {
       return NextResponse.json([]);
     }
 
-    // All users can only see their own work plans
-    const where = { employeeId: parseInt(userId) };
+    if (!ongoingResearchId) {
+      return NextResponse.json({ error: 'ongoingResearchId is required' }, { status: 400 });
+    }
 
+    // Fetch all work plans for this project so every user can VIEW all work plans of the project
     const objectives = await prisma.objectives.findMany({
-      where,
+      where: {
+        ongoingResearchId: parseInt(ongoingResearchId),
+      },
       include: {
         targetActivityList: true,
         employee: {
@@ -56,13 +60,22 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
     }
 
-    const { id: employeeId } = payload as { id: number; role: string };
+    const { id: employeeId, role: userRole } = payload as { id: number; role: string };
+
+    // Only admin can create work plans
+    if (userRole !== 'admin') {
+      return NextResponse.json({ error: 'Only admin can create work plans' }, { status: 403 });
+    }
 
     const body = await request.json();
-    const { objectives, targetActivities } = body;
+    const { objectives, targetActivities, ongoingResearchId } = body;
 
     if (!objectives) {
       return NextResponse.json({ error: 'Objectives field is required' }, { status: 400 });
+    }
+
+    if (!ongoingResearchId) {
+      return NextResponse.json({ error: 'ongoingResearchId is required' }, { status: 400 });
     }
 
     const newObjective = await prisma.objectives.create({
@@ -70,6 +83,7 @@ export async function POST(request: NextRequest) {
         objectives,
         targetActivities: targetActivities || null,
         employeeId,
+        ongoingResearchId: parseInt(ongoingResearchId),
       },
     });
     return NextResponse.json(newObjective);

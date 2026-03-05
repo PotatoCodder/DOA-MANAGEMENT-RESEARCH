@@ -22,20 +22,22 @@ export async function PUT(
       return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
     }
 
-    const { id: employeeId, role: userRole } = payload as { id: number; role: string };
+    const { role: userRole } = payload as { id: number; role: string };
+
+    // Only admin can update work plans
+    if (userRole !== 'admin') {
+      return NextResponse.json({ error: 'Only admin can update work plans' }, { status: 403 });
+    }
 
     const body = await request.json();
     const { objectives, targetActivities } = body;
 
-    // Admin can update any objective, employees can only update their own
-    const where = userRole === 'admin' ? { id: parsedId } : { id: parsedId, employeeId };
-
     const existingObjective = await prisma.objectives.findFirst({
-      where,
+      where: { id: parsedId },
     });
 
     if (!existingObjective) {
-      return NextResponse.json({ error: 'Objective not found or unauthorized' }, { status: 404 });
+      return NextResponse.json({ error: 'Objective not found' }, { status: 404 });
     }
 
     const updatedObjective = await prisma.objectives.update({
@@ -73,17 +75,19 @@ export async function DELETE(
       return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
     }
 
-    const { id: employeeId, role: userRole } = payload as { id: number; role: string };
+    const { role: userRole } = payload as { id: number; role: string };
 
-    // Admin can delete any objective, employees can only delete their own
-    const where = userRole === 'admin' ? { id: parsedId } : { id: parsedId, employeeId };
+    // Only admin can delete work plans
+    if (userRole !== 'admin') {
+      return NextResponse.json({ error: 'Only admin can delete work plans' }, { status: 403 });
+    }
 
     const existingObjective = await prisma.objectives.findFirst({
-      where,
+      where: { id: parsedId },
     });
 
     if (!existingObjective) {
-      return NextResponse.json({ error: 'Objective not found or unauthorized' }, { status: 404 });
+      return NextResponse.json({ error: 'Objective not found' }, { status: 404 });
     }
 
     // First delete associated target activities
