@@ -55,42 +55,7 @@ export async function PUT(
       return NextResponse.json({ error: 'Invalid ID' }, { status: 400 });
     }
 
-    const formData = await request.formData();
-
-    const title = formData.get('title') as string;
-    const proponents = formData.get('proponents') as string;
-    const fundingSource = formData.get('fundingSource') as string;
-    const projectDuration = formData.get('projectDuration') as string;
-    const budgetAllocation = formData.get('budgetAllocation') as string;
-    const commodity = formData.get('commodity') as string;
-    const status = formData.get('status') as string;
-    const projectLocation = formData.get('projectLocation') as string;
-    const pdfFile = formData.get('pdf') as File | null;
-
-    let pdfPath: string | undefined;
-    if (pdfFile && pdfFile instanceof File && pdfFile.size > 0) {
-      try {
-        const bytes = await pdfFile.arrayBuffer();
-        const buffer = Buffer.from(bytes);
-        const filename = `${Date.now()}-${pdfFile.name.replace(/\s+/g, '_')}`;
-        const uploadDir = path.join(process.cwd(), 'public', 'uploads');
-        const filepath = path.join(uploadDir, filename);
-
-        // Ensure the uploads directory exists
-        try {
-          await mkdir(uploadDir, { recursive: true });
-        } catch (mkdirError) {
-          console.error('Failed to create uploads directory:', mkdirError);
-          // Continue, might still work if directory exists
-        }
-
-        await writeFile(filepath, buffer);
-        pdfPath = `/uploads/${filename}`;
-      } catch (fileError) {
-        console.error('Failed to save PDF file:', fileError);
-        return NextResponse.json({ error: 'Failed to upload PDF file' }, { status: 500 });
-      }
-    }
+    const { title, proponents, fundingSource, projectDuration, budgetAllocation, commodity, status, projectLocation, pdf } = await request.json();
 
     const data: any = {};
     if (title) data.title = title;
@@ -101,7 +66,7 @@ export async function PUT(
     if (commodity) data.commodity = commodity;
     if (status) data.status = status;
     if (projectLocation !== undefined) data.projectLocation = projectLocation;
-    if (pdfPath) data.pdf = pdfPath;
+    if (pdf) data.pdf = pdf;
 
     const research = await prisma.ongoingResearch.update({
       where: { id: researchId },

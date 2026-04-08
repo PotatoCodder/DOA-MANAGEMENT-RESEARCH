@@ -34,7 +34,7 @@ export default function CompletedResearchPage() {
     projectDuration: '',
     journal: '',
     published: '',
-    file: null as File | null,
+    file: '' as string,
   });
   const [submitting, setSubmitting] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
@@ -67,7 +67,12 @@ export default function CompletedResearchPage() {
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file && file.type === 'application/pdf') {
-      setFormData({ ...formData, file });
+      const reader = new FileReader();
+      reader.onload = () => {
+        const base64 = (reader.result as string).split(',')[1];
+        setFormData({ ...formData, file: base64 });
+      };
+      reader.readAsDataURL(file);
     }
   };
 
@@ -85,39 +90,22 @@ export default function CompletedResearchPage() {
       const url = editingId ? `${endpoint}/${editingId}` : endpoint;
       const method = editingId ? 'PUT' : 'POST';
 
-      const data = new FormData();
-      data.append('userid', userId);
-      data.append('title', formData.title);
-      data.append('fundingAgency', formData.fundingAgency);
-      
-      if (researchType === 'completed') {
-        data.append('researcher', formData.researcher);
-        data.append('projectDuration', formData.projectDuration);
-      } else if (researchType === 'matured') {
-        data.append('proponents', formData.proponents);
-        data.append('projectDuration', formData.projectDuration);
-      } else {
-        data.append('proponents', formData.proponents);
-        data.append('journal', formData.journal);
-        data.append('published', formData.published);
-      }
-
-      if (formData.file) {
-        data.append('file', formData.file);
-      }
-
       const res = await fetch(url, {
         method,
         headers: {
+          'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`,
         },
-        body: data,
+        body: JSON.stringify({
+          ...formData,
+          userid: userId,
+        }),
       });
 
       if (res.ok) {
         setShowCreateModal(false);
         setEditingId(null);
-        setFormData({ title: '', researcher: '', proponents: '', fundingAgency: '', projectDuration: '', journal: '', published: '', file: null });
+        setFormData({ title: '', researcher: '', proponents: '', fundingAgency: '', projectDuration: '', journal: '', published: '', file: '' });
         fetchResearches();
       } else {
         const err = await res.json();
@@ -167,7 +155,7 @@ export default function CompletedResearchPage() {
       projectDuration: research.projectDuration || '',
       journal: research.journal || '',
       published: research.published || '',
-      file: null,
+      file: '',
     });
     setShowCreateModal(true);
   };
@@ -202,7 +190,7 @@ export default function CompletedResearchPage() {
           </div>
           {userRole === 'admin' && (
             <button
-              onClick={() => { setEditingId(null); setFormData({ title: '', researcher: '', proponents: '', fundingAgency: '', projectDuration: '', journal: '', published: '', file: null }); setShowCreateModal(true); }}
+              onClick={() => { setEditingId(null); setFormData({ title: '', researcher: '', proponents: '', fundingAgency: '', projectDuration: '', journal: '', published: '', file: '' }); setShowCreateModal(true); }}
               className="bg-green-700 text-white px-5 py-2 rounded-md shadow-md hover:bg-green-800 transition"
             >
               Add {researchType === 'completed' ? 'Completed Research' : researchType === 'matured' ? 'Matured Technology' : 'Published'}
@@ -459,7 +447,7 @@ export default function CompletedResearchPage() {
             <h2 className="text-xl font-semibold text-black mb-4">PDF Viewer</h2>
 
             <iframe
-              src={selectedPdf}
+              src={selectedPdf?.startsWith('/uploads') ? selectedPdf : `data:application/pdf;base64,${selectedPdf}`}
               className="w-full h-full border rounded"
               title="PDF Viewer"
             />

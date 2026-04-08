@@ -34,7 +34,7 @@ export default function OngoingResearchPage() {
     commodity: '',
     status: '',
     projectLocation: '',
-    pdf: null as File | null,
+    pdf: '' as string,
   });
   const [submitting, setSubmitting] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
@@ -59,10 +59,10 @@ export default function OngoingResearchPage() {
         commodity: editingResearch.commodity,
         status: editingResearch.status,
         projectLocation: editingResearch.projectLocation || '',
-        pdf: null,
+        pdf: '',
       });
     } else {
-      setFormData({ title: '', proponents: '', fundingSource: '', projectDuration: '', budgetAllocation: '', commodity: '', status: '', projectLocation: '', pdf: null });
+      setFormData({ title: '', proponents: '', fundingSource: '', projectDuration: '', budgetAllocation: '', commodity: '', status: '', projectLocation: '', pdf: '' });
     }
   }, [editingResearch]);
 
@@ -112,31 +112,19 @@ export default function OngoingResearchPage() {
       const method = editingResearch ? 'PUT' : 'POST';
       const url = editingResearch ? `/api/ongoing-research/${editingResearch.id}` : '/api/ongoing-research';
 
-      const formDataToSend = new FormData();
-      formDataToSend.append('title', formData.title);
-      formDataToSend.append('proponents', formData.proponents);
-      formDataToSend.append('fundingSource', formData.fundingSource);
-      formDataToSend.append('projectDuration', formData.projectDuration);
-      formDataToSend.append('budgetAllocation', formData.budgetAllocation);
-      formDataToSend.append('commodity', formData.commodity);
-      formDataToSend.append('status', formData.status);
-      formDataToSend.append('projectLocation', formData.projectLocation);
-      if (formData.pdf) {
-        formDataToSend.append('pdf', formData.pdf);
-      }
-
       const res = await fetch(url, {
         method,
         headers: {
+          'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`,
         },
-        body: formDataToSend,
+        body: JSON.stringify(formData),
       });
 
       if (res.ok) {
         setShowModal(false);
         setEditingResearch(null);
-        setFormData({ title: '', proponents: '', fundingSource: '', projectDuration: '', budgetAllocation: '', commodity: '', status: '', projectLocation: '', pdf: null });
+        setFormData({ title: '', proponents: '', fundingSource: '', projectDuration: '', budgetAllocation: '', commodity: '', status: '', projectLocation: '', pdf: '' });
         fetchResearches();
       } else {
         const errorData = await res.json();
@@ -152,6 +140,18 @@ export default function OngoingResearchPage() {
     }
   };
 
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file && file.type === 'application/pdf') {
+      const reader = new FileReader();
+      reader.onload = () => {
+        const base64 = (reader.result as string).split(',')[1];
+        setFormData({ ...formData, pdf: base64 });
+      };
+      reader.readAsDataURL(file);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gray-100 p-4 pt-24">
@@ -398,7 +398,7 @@ export default function OngoingResearchPage() {
                 <input
                   type="file"
                   accept=".pdf"
-                  onChange={(e) => setFormData({ ...formData, pdf: e.target.files?.[0] || null })}
+                  onChange={handleFileChange}
                   className="w-full border rounded-md px-3 py-2 mt-1 text-black"
                 />
               </div>
@@ -457,7 +457,7 @@ export default function OngoingResearchPage() {
               </div>
             ) : (
               <iframe
-                src={selectedPdf}
+                src={selectedPdf?.startsWith('/uploads') ? selectedPdf : `data:application/pdf;base64,${selectedPdf}`}
                 className="w-full h-full border rounded"
                 title="PDF Viewer"
                 onError={() => setPdfError('Failed to load PDF. Please try opening it in a new tab.')}

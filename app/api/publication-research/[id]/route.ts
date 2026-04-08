@@ -40,13 +40,14 @@ export async function PUT(
       return NextResponse.json({ error: 'Invalid ID' }, { status: 400 });
     }
 
-    const { title, proponents, journal, published, file } = await request.json();
+    const { title, proponents, fundingAgency, journal, published, file } = await request.json();
 
     const research = await prisma.publicationResearch.update({
       where: { id: researchId },
       data: {
         ...(title && { title }),
         ...(proponents && { proponents }),
+        ...(fundingAgency && { fundingAgency }),
         ...(journal && { journal }),
         ...(published && { published }),
         ...(file && { file }),
