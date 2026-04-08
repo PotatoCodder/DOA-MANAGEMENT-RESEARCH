@@ -17,6 +17,7 @@ const DashboardPage = () => {
       completedResearch: 0,
       maturedResearch: 0,
       publicationResearch: 0,
+      infographics: 0,
     });
     const [dashboardData, setDashboardData] = useState({
       recentActivity: [] as string[],
@@ -32,12 +33,13 @@ const DashboardPage = () => {
       const fetchData = async () => {
         setLoading(true);
         try {
-          const [proposalsRes, ongoingRes, completedRes, maturedRes, publicationRes, dashboardRes] = await Promise.all([
+          const [proposalsRes, ongoingRes, completedRes, maturedRes, publicationRes, infographicsRes, dashboardRes] = await Promise.all([
             fetch('/api/research-proposal'),
             fetch('/api/ongoing-research'),
             fetch('/api/completed-research'),
             fetch('/api/matured-research'),
             fetch('/api/publication-research'),
+            fetch('/api/infographics'),
             fetch('/api/dashboard'),
           ]);
 
@@ -46,6 +48,7 @@ const DashboardPage = () => {
           const completed = completedRes.ok ? await completedRes.json() : [];
           const matured = maturedRes.ok ? await maturedRes.json() : [];
           const publication = publicationRes.ok ? await publicationRes.json() : [];
+          const infographicsData = infographicsRes.ok ? await infographicsRes.json() : { infographics: [] };
           const dashboard = dashboardRes.ok ? await dashboardRes.json() : { recentActivity: [], announcements: [] };
 
           setResearchData({
@@ -54,6 +57,7 @@ const DashboardPage = () => {
             completedResearch: completed.length,
             maturedResearch: matured.length,
             publicationResearch: publication.length,
+            infographics: infographicsData.infographics.length,
           });
           setDashboardData(dashboard);
         } catch (error) {
@@ -74,6 +78,7 @@ const DashboardPage = () => {
      { title: "Completed Research", count: researchData.completedResearch, link: "/completed-research", icon: CheckCircle, color: "text-green-600" },
      { title: "Matured Technology", count: researchData.maturedResearch, link: "/matured-research", icon: Leaf, color: "text-purple-600" },
      { title: "Publication", count: researchData.publicationResearch, link: "/publication-research", icon: BookOpen, color: "text-red-600" },
+     ...(userRole === 'admin' ? [{ title: "Infographics", count: researchData.infographics, link: "/infographics", icon: FileText, color: "text-pink-600" }] : []),
    ];
 
   return (
