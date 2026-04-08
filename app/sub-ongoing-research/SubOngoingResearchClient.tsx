@@ -74,8 +74,9 @@ export default function SubOngoingResearchPage() {
     startDate: '',
     endDate: '',
   });
-  const [targetActivitiesList, setTargetActivitiesList] = useState<{ targetActivity: string, startDate: string, endDate: string }[]>([]);
+  const [targetActivitiesList, setTargetActivitiesList] = useState<{ id?: number, targetActivity: string, startDate: string, endDate: string }[]>([]);
   const [editingObjective, setEditingObjective] = useState<Objective | null>(null);
+  const [editingTargetId, setEditingTargetId] = useState<number | null>(null);
   const [currentUserId, setCurrentUserId] = useState<number | null>(null);
   const [projectTitle, setProjectTitle] = useState<string>('');
 
@@ -119,8 +120,15 @@ export default function SubOngoingResearchPage() {
         objectives: editingObjective.objectives,
         targetActivities: editingObjective.targetActivities || '',
       });
+      setTargetActivitiesList(editingObjective.targetActivityList.map(ta => ({
+        id: ta.id,
+        targetActivity: ta.targetActivity,
+        startDate: ta.startDate ? new Date(ta.startDate).toISOString().split('T')[0] : '',
+        endDate: ta.endDate ? new Date(ta.endDate).toISOString().split('T')[0] : '',
+      })));
     } else {
       setObjectivesFormData({ objectives: '', targetActivities: '' });
+      setTargetActivitiesList([]);
     }
   }, [editingObjective]);
 
@@ -285,9 +293,75 @@ export default function SubOngoingResearchPage() {
     }
   };
 
-  const handleAddToList = () => {
-    setTargetActivitiesList([...targetActivitiesList, targetFormData]);
-    setTargetFormData({ targetActivity: '', startDate: '', endDate: '' });
+  const handleAddToList = async () => {
+    if (editingTargetId) {
+      await handleUpdateTarget(editingTargetId, targetFormData);
+      setEditingTargetId(null);
+      setTargetFormData({ targetActivity: '', startDate: '', endDate: '' });
+      return;
+    }
+
+    if (editingObjective) {
+      // If editing an existing objective, immediately save to DB
+      try {
+        const res = await fetch('/api/target-activities', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            ...targetFormData,
+            objectivesId: editingObjective.id
+          })
+        });
+        if (res.ok) {
+          const newTarget = await res.json();
+          setTargetActivitiesList([...targetActivitiesList, {
+            id: newTarget.id,
+            targetActivity: newTarget.targetActivity,
+            startDate: newTarget.startDate ? new Date(newTarget.startDate).toISOString().split('T')[0] : '',
+            endDate: newTarget.endDate ? new Date(newTarget.endDate).toISOString().split('T')[0] : '',
+          }]);
+          setTargetFormData({ targetActivity: '', startDate: '', endDate: '' });
+          fetchObjectives();
+        }
+      } catch (error) {
+        console.error('Error adding target activity:', error);
+      }
+    } else {
+      setTargetActivitiesList([...targetActivitiesList, targetFormData]);
+      setTargetFormData({ targetActivity: '', startDate: '', endDate: '' });
+    }
+  };
+
+  const handleUpdateTarget = async (id: number, data: any) => {
+    try {
+      const res = await fetch(`/api/target-activities/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+      });
+      if (res.ok) {
+        fetchObjectives();
+        // Update local list
+        setTargetActivitiesList(prev => prev.map(ta => ta.id === id ? { ...ta, ...data } : ta));
+      }
+    } catch (error) {
+      console.error('Error updating target activity:', error);
+    }
+  };
+
+  const handleDeleteTarget = async (id: number) => {
+    if (!confirm('Are you sure you want to delete this target activity?')) return;
+    try {
+      const res = await fetch(`/api/target-activities/${id}`, {
+        method: 'DELETE'
+      });
+      if (res.ok) {
+        fetchObjectives();
+        setTargetActivitiesList(prev => prev.filter(ta => ta.id !== id));
+      }
+    } catch (error) {
+      console.error('Error deleting target activity:', error);
+    }
   };
 
   const handleCreateTarget = async (e: React.FormEvent) => {
@@ -654,7 +728,7 @@ export default function SubOngoingResearchPage() {
                 <div className="flex justify-between">
                   <button
                     type="button"
-                    onClick={() => setShowAddTargetForm(false)}
+                    onClick={() => { setShowAddTargetForm(false); setEditingTargetId(null); setTargetFormData({ targetActivity: '', startDate: '', endDate: '' }); }}
                     className="px-4 py-2 border rounded-md"
                   >
                     Cancel
@@ -664,12 +738,31 @@ export default function SubOngoingResearchPage() {
                     onClick={handleAddToList}
                     className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
                   >
-                    Add to List
+                    {editingTargetId ? 'Update Activity' : 'Add to List'}
                   </button>
                 </div>
                 <ul className="space-y-2">
                   {targetActivitiesList.map((item, index) => (
-                    <li key={index} className="text-black">{(index + 1) + '. ' + item.targetActivity} ({item.startDate} to {item.endDate})</li>
+                    <li key={index} className="text-black flex justify-between items-center group">
+                      <span>{(index + 1) + '. ' + item.targetActivity} ({item.startDate} to {item.endDate})</span>
+                      <div className="flex bg-white rounded-md shadow-sm border opacity-0 group-hover:opacity-100 transition-opacity">
+                        <button
+                          onClick={() => {
+                            setEditingTargetId(item.id || null);
+                            setTargetFormData({ targetActivity: item.targetActivity, startDate: item.startDate, endDate: item.endDate });
+                          }}
+                          className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-l-md border-r"
+                        >
+                          <Edit className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={() => item.id && handleDeleteTarget(item.id)}
+                          className="p-1.5 text-red-600 hover:bg-red-50 rounded-r-md"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </li>
                   ))}
                 </ul>
                 <button

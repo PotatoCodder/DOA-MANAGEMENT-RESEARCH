@@ -3,18 +3,24 @@
 import { useState, useEffect } from 'react';
 import { X, Edit, Trash2, Loader, Search } from 'lucide-react';
 
-interface CompletedResearch {
+interface ResearchData {
   id: number;
   userid: string;
   title: string;
-  researcher: string;
-  funding: string;
-  project: string;
+  researcher?: string;
+  proponents?: string;
+  fundingAgency: string;
+  projectDuration?: string;
+  journal?: string;
+  published?: string;
   file: string;
 }
 
+type ResearchType = 'completed' | 'matured' | 'published';
+
 export default function CompletedResearchPage() {
-  const [researches, setResearches] = useState<CompletedResearch[]>([]);
+  const [researchType, setResearchType] = useState<ResearchType>('completed');
+  const [researches, setResearches] = useState<ResearchData[]>([]);
   const [loading, setLoading] = useState(true);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showPdfModal, setShowPdfModal] = useState(false);
@@ -23,22 +29,30 @@ export default function CompletedResearchPage() {
   const [formData, setFormData] = useState({
     title: '',
     researcher: '',
-    funding: '',
-    project: '',
-    file: '',
+    proponents: '',
+    fundingAgency: '',
+    projectDuration: '',
+    journal: '',
+    published: '',
+    file: null as File | null,
   });
   const [submitting, setSubmitting] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
+  const [editingId, setEditingId] = useState<number | null>(null);
 
   useEffect(() => {
     fetchResearches();
     const role = localStorage.getItem('role');
     setUserRole(role);
-  }, []);
+  }, [researchType]);
 
   const fetchResearches = async () => {
     try {
-      const res = await fetch('/api/completed-research');
+      setLoading(true);
+      const endpoint = researchType === 'completed' ? '/api/completed-research' : 
+                       researchType === 'matured' ? '/api/matured-research' : 
+                       '/api/publication-research';
+      const res = await fetch(endpoint);
       if (res.ok) {
         const data = await res.json();
         setResearches(data);
@@ -53,43 +67,65 @@ export default function CompletedResearchPage() {
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file && file.type === 'application/pdf') {
-      const reader = new FileReader();
-      reader.onload = () => {
-        const base64 = (reader.result as string).split(',')[1];
-        setFormData({ ...formData, file: base64 });
-      };
-      reader.readAsDataURL(file);
+      setFormData({ ...formData, file });
     }
   };
 
-  const handleCreate = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSubmitting(true);
 
     try {
       const token = localStorage.getItem('token');
-      const res = await fetch('/api/completed-research', {
-        method: 'POST',
+      const userId = localStorage.getItem('id') || 'current-user';
+      const endpoint = researchType === 'completed' ? '/api/completed-research' : 
+                       researchType === 'matured' ? '/api/matured-research' : 
+                       '/api/publication-research';
+      
+      const url = editingId ? `${endpoint}/${editingId}` : endpoint;
+      const method = editingId ? 'PUT' : 'POST';
+
+      const data = new FormData();
+      data.append('userid', userId);
+      data.append('title', formData.title);
+      data.append('fundingAgency', formData.fundingAgency);
+      
+      if (researchType === 'completed') {
+        data.append('researcher', formData.researcher);
+        data.append('projectDuration', formData.projectDuration);
+      } else if (researchType === 'matured') {
+        data.append('proponents', formData.proponents);
+        data.append('projectDuration', formData.projectDuration);
+      } else {
+        data.append('proponents', formData.proponents);
+        data.append('journal', formData.journal);
+        data.append('published', formData.published);
+      }
+
+      if (formData.file) {
+        data.append('file', formData.file);
+      }
+
+      const res = await fetch(url, {
+        method,
         headers: {
-          'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`,
         },
-        body: JSON.stringify({
-          userid: 'current-user',
-          ...formData,
-        }),
+        body: data,
       });
 
       if (res.ok) {
         setShowCreateModal(false);
-        setFormData({ title: '', researcher: '', funding: '', project: '', file: '' });
+        setEditingId(null);
+        setFormData({ title: '', researcher: '', proponents: '', fundingAgency: '', projectDuration: '', journal: '', published: '', file: null });
         fetchResearches();
       } else {
-        alert('Failed to create research');
+        const err = await res.json();
+        alert(err.error || 'Failed to submit research');
       }
     } catch (error) {
-      console.error('Error creating research:', error);
-      alert('Error creating research');
+      console.error('Error submitting research:', error);
+      alert('Error submitting research');
     } finally {
       setSubmitting(false);
     }
@@ -100,7 +136,10 @@ export default function CompletedResearchPage() {
 
     try {
       const token = localStorage.getItem('token');
-      const res = await fetch(`/api/completed-research/${id}`, {
+      const endpoint = researchType === 'completed' ? `/api/completed-research/${id}` : 
+                       researchType === 'matured' ? `/api/matured-research/${id}` : 
+                       `/api/publication-research/${id}`;
+      const res = await fetch(endpoint, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -118,18 +157,55 @@ export default function CompletedResearchPage() {
     }
   };
 
+  const openEditModal = (research: ResearchData) => {
+    setEditingId(research.id);
+    setFormData({
+      title: research.title,
+      researcher: research.researcher || '',
+      proponents: research.proponents || '',
+      fundingAgency: research.fundingAgency,
+      projectDuration: research.projectDuration || '',
+      journal: research.journal || '',
+      published: research.published || '',
+      file: null,
+    });
+    setShowCreateModal(true);
+  };
+
   return (
     <div className="min-h-screen bg-gray-100 p-6 pt-24">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-10 gap-4">
-          <h1 className="text-3xl font-bold text-black">Completed Research</h1>
+          <div>
+            <h1 className="text-3xl font-bold text-black">Research Management</h1>
+            <div className="mt-4 flex gap-2">
+              <button 
+                onClick={() => setResearchType('completed')}
+                className={`px-4 py-2 rounded-md transition ${researchType === 'completed' ? 'bg-green-700 text-white' : 'bg-white text-black border hover:bg-gray-50'}`}
+              >
+                Completed Research
+              </button>
+              <button 
+                onClick={() => setResearchType('matured')}
+                className={`px-4 py-2 rounded-md transition ${researchType === 'matured' ? 'bg-green-700 text-white' : 'bg-white text-black border hover:bg-gray-50'}`}
+              >
+                Matured Technology
+              </button>
+              <button 
+                onClick={() => setResearchType('published')}
+                className={`px-4 py-2 rounded-md transition ${researchType === 'published' ? 'bg-green-700 text-white' : 'bg-white text-black border hover:bg-gray-50'}`}
+              >
+                Published
+              </button>
+            </div>
+          </div>
           {userRole === 'admin' && (
             <button
-              onClick={() => setShowCreateModal(true)}
+              onClick={() => { setEditingId(null); setFormData({ title: '', researcher: '', proponents: '', fundingAgency: '', projectDuration: '', journal: '', published: '', file: null }); setShowCreateModal(true); }}
               className="bg-green-700 text-white px-5 py-2 rounded-md shadow-md hover:bg-green-800 transition"
             >
-              Add Completed Research
+              Add {researchType === 'completed' ? 'Completed Research' : researchType === 'matured' ? 'Matured Technology' : 'Published'}
             </button>
           )}
         </div>
@@ -140,7 +216,7 @@ export default function CompletedResearchPage() {
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
             <input
               type="text"
-              placeholder="Search completed researches..."
+              placeholder={`Search ${researchType} researches...`}
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent text-black"
@@ -157,24 +233,42 @@ export default function CompletedResearchPage() {
               <thead className="bg-green-700 text-white">
                 <tr>
                   <th className="px-6 py-3 text-left">Title</th>
-                  <th className="px-6 py-3 text-left">Researcher</th>
-                  <th className="px-6 py-3 text-left">Funding</th>
-                  <th className="px-6 py-3 text-left">Project</th>
+                  {researchType === 'completed' ? (
+                    <th className="px-6 py-3 text-left">Researcher</th>
+                  ) : (
+                    <th className="px-6 py-3 text-left">Proponents</th>
+                  )}
+                  <th className="px-6 py-3 text-left">Funding Agency</th>
+                  {researchType === 'published' ? (
+                    <>
+                      <th className="px-6 py-3 text-left">Journal</th>
+                      <th className="px-6 py-3 text-left">Published</th>
+                    </>
+                  ) : (
+                    <th className="px-6 py-3 text-left">Project Duration</th>
+                  )}
                   <th className="px-6 py-3 text-left">Actions</th>
                 </tr>
               </thead>
               <tbody>
                 {researches.filter(research =>
                   research.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                  research.researcher.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                  research.funding.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                  research.project.toLowerCase().includes(searchTerm.toLowerCase())
+                  (research.researcher || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+                  (research.proponents || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+                  research.fundingAgency.toLowerCase().includes(searchTerm.toLowerCase())
                 ).map((research) => (
                   <tr key={research.id} className="border-b border-white/20 hover:bg-white/5">
                     <td className="px-6 py-4 text-black">{research.title}</td>
-                    <td className="px-6 py-4 text-black">{research.researcher}</td>
-                    <td className="px-6 py-4 text-black">{research.funding}</td>
-                    <td className="px-6 py-4 text-black">{research.project}</td>
+                    <td className="px-6 py-4 text-black">{research.researcher || research.proponents}</td>
+                    <td className="px-6 py-4 text-black">{research.fundingAgency}</td>
+                    {researchType === 'published' ? (
+                      <>
+                        <td className="px-6 py-4 text-black">{research.journal}</td>
+                        <td className="px-6 py-4 text-black">{research.published}</td>
+                      </>
+                    ) : (
+                      <td className="px-6 py-4 text-black">{research.projectDuration}</td>
+                    )}
                     <td className="px-6 py-4">
                       <div className="flex gap-2">
                         <button
@@ -188,7 +282,10 @@ export default function CompletedResearchPage() {
                         </button>
                         {userRole === 'admin' && (
                           <>
-                            <button className="p-1 text-blue-600 hover:text-blue-800">
+                            <button 
+                              onClick={() => openEditModal(research)}
+                              className="p-1 text-blue-600 hover:text-blue-800"
+                            >
                               <Edit className="w-4 h-4" />
                             </button>
                             <button
@@ -205,8 +302,8 @@ export default function CompletedResearchPage() {
                 ))}
                 {researches.length === 0 && (
                   <tr>
-                    <td colSpan={5} className="px-6 py-8 text-center text-black/60">
-                      No completed research found
+                    <td colSpan={6} className="px-6 py-8 text-center text-black/60">
+                      No {researchType} research found
                     </td>
                   </tr>
                 )}
@@ -216,10 +313,10 @@ export default function CompletedResearchPage() {
         </div>
       </div>
 
-      {/* Create Modal */}
+      {/* Create/Edit Modal */}
       {showCreateModal && (
         <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center">
-          <div className="bg-white w-full max-w-lg rounded-xl shadow-lg p-6 relative">
+          <div className="bg-white w-full max-w-lg rounded-xl shadow-lg p-6 relative max-h-[90vh] overflow-y-auto">
             <button
               onClick={() => setShowCreateModal(false)}
               className="absolute top-4 right-4 text-gray-500 hover:text-black"
@@ -228,14 +325,12 @@ export default function CompletedResearchPage() {
             </button>
 
             <h2 className="text-xl font-semibold text-black mb-6">
-              Add Completed Research
+              {editingId ? 'Edit' : 'Add'} {researchType === 'completed' ? 'Completed Research' : researchType === 'matured' ? 'Matured Technology' : 'Published'}
             </h2>
 
-            <form onSubmit={handleCreate} className="space-y-4">
+            <form onSubmit={handleSubmit} className="space-y-4">
               <div>
-                <label className="text-sm font-medium text-black">
-                  Title
-                </label>
+                <label className="text-sm font-medium text-black">Title</label>
                 <input
                   type="text"
                   value={formData.title}
@@ -245,55 +340,87 @@ export default function CompletedResearchPage() {
                 />
               </div>
 
+              {researchType === 'completed' ? (
+                <div>
+                  <label className="text-sm font-medium text-black">Researcher</label>
+                  <input
+                    type="text"
+                    value={formData.researcher}
+                    onChange={(e) => setFormData({ ...formData, researcher: e.target.value })}
+                    className="w-full border rounded-md px-3 py-2 mt-1 text-black"
+                    required
+                  />
+                </div>
+              ) : (
+                <div>
+                  <label className="text-sm font-medium text-black">Proponents</label>
+                  <input
+                    type="text"
+                    value={formData.proponents}
+                    onChange={(e) => setFormData({ ...formData, proponents: e.target.value })}
+                    className="w-full border rounded-md px-3 py-2 mt-1 text-black"
+                    required
+                  />
+                </div>
+              )}
+
               <div>
-                <label className="text-sm font-medium text-black">
-                  Researcher
-                </label>
+                <label className="text-sm font-medium text-black">Funding Agency</label>
                 <input
                   type="text"
-                  value={formData.researcher}
-                  onChange={(e) => setFormData({ ...formData, researcher: e.target.value })}
+                  value={formData.fundingAgency}
+                  onChange={(e) => setFormData({ ...formData, fundingAgency: e.target.value })}
                   className="w-full border rounded-md px-3 py-2 mt-1 text-black"
                   required
                 />
               </div>
 
-              <div>
-                <label className="text-sm font-medium text-black">
-                  Funding
-                </label>
-                <input
-                  type="text"
-                  value={formData.funding}
-                  onChange={(e) => setFormData({ ...formData, funding: e.target.value })}
-                  className="w-full border rounded-md px-3 py-2 mt-1 text-black"
-                  required
-                />
-              </div>
+              {researchType === 'published' ? (
+                <>
+                  <div>
+                    <label className="text-sm font-medium text-black">Journal</label>
+                    <input
+                      type="text"
+                      value={formData.journal}
+                      onChange={(e) => setFormData({ ...formData, journal: e.target.value })}
+                      className="w-full border rounded-md px-3 py-2 mt-1 text-black"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-black">Year/Date Published</label>
+                    <input
+                      type="text"
+                      value={formData.published}
+                      onChange={(e) => setFormData({ ...formData, published: e.target.value })}
+                      className="w-full border rounded-md px-3 py-2 mt-1 text-black"
+                      required
+                    />
+                  </div>
+                </>
+              ) : (
+                <div>
+                  <label className="text-sm font-medium text-black">Project Duration</label>
+                  <input
+                    type="text"
+                    value={formData.projectDuration}
+                    onChange={(e) => setFormData({ ...formData, projectDuration: e.target.value })}
+                    className="w-full border rounded-md px-3 py-2 mt-1 text-black"
+                    required
+                  />
+                </div>
+              )}
 
               <div>
                 <label className="text-sm font-medium text-black">
-                  Project
-                </label>
-                <input
-                  type="text"
-                  value={formData.project}
-                  onChange={(e) => setFormData({ ...formData, project: e.target.value })}
-                  className="w-full border rounded-md px-3 py-2 mt-1 text-black"
-                  required
-                />
-              </div>
-
-              <div>
-                <label className="text-sm font-medium text-black">
-                  Attach PDF file
+                  Attach PDF file {editingId && '(optional)'}
                 </label>
                 <input
                   type="file"
                   accept="application/pdf"
                   onChange={handleFileChange}
-                  className="w-full mt-1"
-                  required
+                  className="w-full mt-1 text-black"
+                  required={!editingId}
                 />
               </div>
 
@@ -301,7 +428,7 @@ export default function CompletedResearchPage() {
                 <button
                   type="button"
                   onClick={() => setShowCreateModal(false)}
-                  className="px-4 py-2 border rounded-md"
+                  className="px-4 py-2 border rounded-md text-black"
                 >
                   Cancel
                 </button>
@@ -310,7 +437,7 @@ export default function CompletedResearchPage() {
                   disabled={submitting}
                   className="px-4 py-2 bg-green-700 text-white rounded-md hover:bg-green-800 disabled:opacity-50"
                 >
-                  {submitting ? 'Creating...' : 'Add Research'}
+                  {submitting ? 'Submitting...' : (editingId ? 'Update' : 'Add')} Research
                 </button>
               </div>
             </form>
@@ -332,7 +459,7 @@ export default function CompletedResearchPage() {
             <h2 className="text-xl font-semibold text-black mb-4">PDF Viewer</h2>
 
             <iframe
-              src={`data:application/pdf;base64,${selectedPdf}`}
+              src={selectedPdf}
               className="w-full h-full border rounded"
               title="PDF Viewer"
             />

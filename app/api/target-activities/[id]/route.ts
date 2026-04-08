@@ -4,23 +4,24 @@ import prisma from '@/lib/prisma';
 export async function PUT(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await params;
-    const idNum = parseInt(id);
+    const targetId = parseInt(id);
 
-    if (isNaN(idNum)) {
+    if (isNaN(targetId)) {
       return NextResponse.json({ error: 'Invalid ID' }, { status: 400 });
     }
 
-    const { title, image } = await request.json();
+    const { targetActivity, startDate, endDate } = await request.json();
 
-    const infographic = await prisma.infographics.update({
-      where: { id: idNum },
+    const updatedTarget = await prisma.targetActivities.update({
+      where: { id: targetId },
       data: {
-        ...(title && { title }),
-        ...(image && { image }),
+        ...(targetActivity && { targetActivity }),
+        startDate: (startDate !== undefined) ? (startDate ? new Date(startDate) : null) : undefined,
+        endDate: (endDate !== undefined) ? (endDate ? new Date(endDate) : null) : undefined,
       },
     });
 
-    return NextResponse.json(infographic);
+    return NextResponse.json(updatedTarget);
   } catch (error) {
     console.error(error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
@@ -30,17 +31,17 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
 export async function DELETE(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await params;
-    const idNum = parseInt(id);
+    const targetId = parseInt(id);
 
-    if (isNaN(idNum)) {
+    if (isNaN(targetId)) {
       return NextResponse.json({ error: 'Invalid ID' }, { status: 400 });
     }
 
-    await prisma.infographics.delete({
-      where: { id: idNum },
+    await prisma.targetActivities.delete({
+      where: { id: targetId },
     });
 
-    return NextResponse.json({ message: 'Infographic deleted successfully' });
+    return NextResponse.json({ message: 'Target activity deleted successfully' });
   } catch (error) {
     console.error(error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });

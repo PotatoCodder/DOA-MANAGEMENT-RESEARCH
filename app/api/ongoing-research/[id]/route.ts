@@ -68,11 +68,11 @@ export async function PUT(
     const pdfFile = formData.get('pdf') as File | null;
 
     let pdfPath: string | undefined;
-    if (pdfFile) {
+    if (pdfFile && pdfFile instanceof File && pdfFile.size > 0) {
       try {
         const bytes = await pdfFile.arrayBuffer();
         const buffer = Buffer.from(bytes);
-        const filename = `${Date.now()}-${pdfFile.name}`;
+        const filename = `${Date.now()}-${pdfFile.name.replace(/\s+/g, '_')}`;
         const uploadDir = path.join(process.cwd(), 'public', 'uploads');
         const filepath = path.join(uploadDir, filename);
 

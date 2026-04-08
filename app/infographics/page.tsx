@@ -25,6 +25,7 @@ export default function InfographicsPage() {
     image: '',
   });
   const [submitting, setSubmitting] = useState(false);
+  const [editingInfographic, setEditingInfographic] = useState<Infographic | null>(null);
 
   useEffect(() => {
     fetchInfographics(1);
@@ -72,6 +73,39 @@ export default function InfographicsPage() {
         setFormData({ ...formData, image: base64 });
       };
       reader.readAsDataURL(file);
+    }
+  };
+
+  const handleUpdate = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingInfographic) return;
+    setSubmitting(true);
+
+    try {
+      const token = localStorage.getItem('token');
+      const res = await fetch(`/api/infographics/${editingInfographic.id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify(formData),
+      });
+
+      if (res.ok) {
+        setShowCreateModal(false);
+        setEditingInfographic(null);
+        setFormData({ title: '', image: '' });
+        fetchInfographics(currentPage);
+      } else {
+        const data = await res.json();
+        alert(data.error || 'Failed to update infographic');
+      }
+    } catch (error) {
+      console.error('Error updating infographic:', error);
+      alert('Error updating infographic');
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -139,7 +173,7 @@ export default function InfographicsPage() {
           <h1 className="text-3xl font-bold text-black">Infographics</h1>
           {(userRole === 'admin' || userRole === 'employee') && (
             <button
-              onClick={() => setShowCreateModal(true)}
+              onClick={() => { setEditingInfographic(null); setFormData({ title: '', image: '' }); setShowCreateModal(true); }}
               className="bg-green-700 text-white px-5 py-2 rounded-md shadow-md hover:bg-green-800 transition flex items-center gap-2"
             >
               <Plus className="w-4 h-4" />
@@ -156,7 +190,7 @@ export default function InfographicsPage() {
             </div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-              {infographics.map((infographic) => (
+              {infographics.map((infographic, index) => (
                 <div key={infographic.id} className="bg-white rounded-lg shadow-md overflow-hidden">
                   <div className="aspect-square relative">
                     <Image
@@ -164,6 +198,7 @@ export default function InfographicsPage() {
                       alt={infographic.title}
                       fill
                       className="object-cover cursor-pointer"
+                      priority={index < 4}
                       onClick={() => {
                         setSelectedImage(`data:image/jpeg;base64,${infographic.image}`);
                         setShowImageModal(true);
@@ -174,7 +209,14 @@ export default function InfographicsPage() {
                     <h3 className="font-semibold text-black mb-2">{infographic.title}</h3>
                     {userRole === 'admin' && (
                       <div className="flex justify-end gap-2">
-                        <button className="p-1 text-blue-600 hover:text-blue-800">
+                        <button
+                          onClick={() => {
+                            setEditingInfographic(infographic);
+                            setFormData({ title: infographic.title, image: infographic.image });
+                            setShowCreateModal(true);
+                          }}
+                          className="p-1 text-blue-600 hover:text-blue-800"
+                        >
                           <Edit className="w-4 h-4" />
                         </button>
                         <button
@@ -222,10 +264,10 @@ export default function InfographicsPage() {
             </button>
 
             <h2 className="text-xl font-semibold text-black mb-6">
-              Add Infographic
+              {editingInfographic ? 'Edit Infographic' : 'Add Infographic'}
             </h2>
 
-            <form onSubmit={handleCreate} className="space-y-4">
+            <form onSubmit={editingInfographic ? handleUpdate : handleCreate} className="space-y-4">
               <div>
                 <label className="text-sm font-medium text-black">
                   Title
@@ -248,7 +290,7 @@ export default function InfographicsPage() {
                   accept="image/*"
                   onChange={handleFileChange}
                   className="w-full mt-1"
-                  required
+                  required={!editingInfographic}
                 />
               </div>
 
@@ -265,7 +307,7 @@ export default function InfographicsPage() {
                   disabled={submitting}
                   className="px-4 py-2 bg-green-700 text-white rounded-md hover:bg-green-800 disabled:opacity-50"
                 >
-                  {submitting ? 'Creating...' : 'Add Infographic'}
+                  {submitting ? (editingInfographic ? 'Updating...' : 'Creating...') : (editingInfographic ? 'Update Infographic' : 'Add Infographic')}
                 </button>
               </div>
             </form>

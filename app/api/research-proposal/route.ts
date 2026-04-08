@@ -36,6 +36,10 @@ export async function GET(request: NextRequest) {
 
     const proposals = await prisma.researchProposal.findMany({
       where,
+      include: {
+        comments: true,
+        revisedProposals: true,
+      },
       orderBy: { dateUpload: 'desc' },
     });
 

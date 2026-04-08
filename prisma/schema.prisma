@@ -69,33 +69,34 @@ model subOngoingResearch {
 
 // Research-related tables
 model completedResearch {
-  id        Int    @id @default(autoincrement())
-  userid    String
-  title     String
-  researcher String
-  funding   String
-  project   String
-  file      String
+  id              Int    @id @default(autoincrement())
+  userid          String
+  title           String
+  researcher      String
+  fundingAgency   String
+  projectDuration String
+  file            String
 }
 
 model maturedResearch {
-  id        Int    @id @default(autoincrement())
-  userid    String
-  title     String
-  proponents String
-  funding   String
-  duration  String
-  file      String
+  id              Int    @id @default(autoincrement())
+  userid          String
+  title           String
+  proponents      String
+  fundingAgency   String
+  projectDuration String
+  file            String
 }
 
 model publicationResearch {
-  id        Int    @id @default(autoincrement())
-  userid    String
-  title     String
-  proponents String
-  journal   String
-  published String
-  file      String
+  id              Int    @id @default(autoincrement())
+  userid          String
+  title           String
+  proponents      String
+  fundingAgency   String
+  journal         String
+  published       String
+  file            String
 }
 
 model infographics {
@@ -125,14 +126,34 @@ model RecentActivity {
 }
 
 model researchProposal {
-  id            Int      @id @default(autoincrement())
-  userid        String
-  title         String
-  status        String
-  proponents    String
-  fundingAgency String
-  dateUpload    DateTime @default(now())
-  file          String
+  id               Int                @id @default(autoincrement())
+  userid           String
+  title            String
+  status           String
+  proponents       String
+  fundingAgency    String
+  dateUpload       DateTime           @default(now())
+  file             String
+  comments         ProposalComment[]
+  revisedProposals RevisedProposal[]
+}
+
+model ProposalComment {
+  id                 Int              @id @default(autoincrement())
+  content            String           @db.Text
+  file               String?          @db.Text // PDF attachment for comments
+  createdAt          DateTime         @default(now())
+  researchProposalId Int
+  researchProposal   researchProposal @relation(fields: [researchProposalId], references: [id], onDelete: Cascade)
+}
+
+model RevisedProposal {
+  id                 Int              @id @default(autoincrement())
+  file               String           @db.Text // The revised document (PDF)
+  description        String?          @db.Text
+  createdAt          DateTime         @default(now())
+  researchProposalId Int
+  researchProposal   researchProposal @relation(fields: [researchProposalId], references: [id], onDelete: Cascade)
 }
 
 model Objectives {
