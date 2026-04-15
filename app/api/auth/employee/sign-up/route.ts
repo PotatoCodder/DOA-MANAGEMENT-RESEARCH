@@ -13,8 +13,8 @@ export async function POST(request: NextRequest) {
     const existingEmployee = await prisma.employee.findFirst({
       where: {
         OR: [
-          { employeeId },
-          { email },
+          { employeeId: { equals: employeeId.trim(), mode: 'insensitive' } },
+          { email: { equals: email.trim(), mode: 'insensitive' } },
         ],
       },
     });
@@ -37,7 +37,7 @@ export async function POST(request: NextRequest) {
 
     const token = await signJWT({ id: employee.id, employeeId: employee.employeeId, email: employee.email, role: 'employee' });
 
-    return NextResponse.json({ token });
+    return NextResponse.json({ token, id: employee.id });
   } catch (error) {
     console.error(error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });

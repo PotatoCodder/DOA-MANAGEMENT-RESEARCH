@@ -11,8 +11,13 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Email and password are required' }, { status: 400 });
     }
 
-    const employee = await prisma.employee.findUnique({
-      where: { email },
+    const employee = await prisma.employee.findFirst({
+      where: {
+        OR: [
+          { email: { equals: email.trim(), mode: 'insensitive' } },
+          { employeeId: { equals: email.trim(), mode: 'insensitive' } },
+        ],
+      },
     });
 
     if (!employee) {
@@ -35,7 +40,7 @@ export async function POST(request: NextRequest) {
 
     const token = await signJWT({ id: employee.id, employeeId: employee.employeeId, email: employee.email, role: 'employee' });
 
-    return NextResponse.json({ token });
+    return NextResponse.json({ token, id: employee.id });
   } catch (error) {
     console.error(error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });

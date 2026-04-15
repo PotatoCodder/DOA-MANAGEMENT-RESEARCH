@@ -161,8 +161,8 @@ model Objectives {
   objectives String
   targetActivities String?
   date DateTime?
-  employeeId Int
-  employee employee @relation(fields: [employeeId], references: [id])
+  employeeId Int?
+  employee employee? @relation(fields: [employeeId], references: [id])
   ongoingResearchId Int?
   ongoingResearch ongoingResearch? @relation(fields: [ongoingResearchId], references: [id], onDelete: Cascade)
   targetActivityList TargetActivities[]

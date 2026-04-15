@@ -53,23 +53,23 @@ export default function LoginModal() {
     if (!isSignup) {
       endpoint = userType === 'admin' ? '/api/auth/admin/login' : '/api/auth/employee/login';
       body = userType === 'admin'
-        ? { userName: formData.identifier, password: formData.password }
-        : { email: formData.identifier, password: formData.password };
+        ? { userName: formData.identifier.trim(), password: formData.password }
+        : { email: formData.identifier.trim(), password: formData.password };
     } else {
       endpoint = userType === 'admin' ? '/api/auth/admin/sign-up' : '/api/auth/employee/sign-up';
       if (userType === 'admin') {
         body = {
-          userName: formData.identifier,
+          userName: formData.identifier.trim(),
           password: formData.password,
-          fullName: formData.fullName,
-          Email: formData.Email
+          fullName: formData.fullName.trim(),
+          Email: formData.Email.trim()
         };
       } else {
         body = {
-          employeeId: formData.employeeId,
-          fullName: formData.fullName,
-          email: formData.email,
-          mobileNumber: formData.mobileNumber,
+          employeeId: formData.employeeId.trim(),
+          fullName: formData.fullName.trim(),
+          email: formData.email.trim(),
+          mobileNumber: formData.mobileNumber.trim(),
           password: formData.password
         };
       }
@@ -88,6 +88,7 @@ export default function LoginModal() {
         if (!isSignup) {
           localStorage.setItem('token', data.token);
           localStorage.setItem('role', userType);
+          localStorage.setItem('id', data.id);
           handleClose();
           alert('Login successful!');
           window.location.reload();
@@ -163,6 +164,7 @@ export default function LoginModal() {
                     type="button"
                     onClick={() => {
                       setUserType('admin');
+                      setIsSignup(false);
                       resetForm();
                     }}
                     className={`py-3 px-4 rounded-lg font-medium transition-all ${
@@ -339,15 +341,17 @@ export default function LoginModal() {
               </button>
 
               {/* Toggle between Login/Signup */}
-              <div className="text-center pt-2">
-                <button
-                  type="button"
-                  onClick={toggleMode}
-                  className="text-green-600 hover:text-green-700 font-medium text-sm transition-colors"
-                >
-                  {isSignup ? 'Already have an account? Login' : "Don't have an account? Sign up"}
-                </button>
-              </div>
+              {userType === 'employee' && (
+                <div className="text-center pt-2">
+                  <button
+                    type="button"
+                    onClick={toggleMode}
+                    className="text-green-600 hover:text-green-700 font-medium text-sm transition-colors"
+                  >
+                    {isSignup ? 'Already have an account? Login' : "Don't have an account? Sign up"}
+                  </button>
+                </div>
+              )}
             </form>
           </div>
         </div>

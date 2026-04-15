@@ -60,7 +60,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
     }
 
-    const { id: employeeId, role: userRole } = payload as { id: number; role: string };
+    const { id: tokenUserId, role: userRole } = payload as { id: number; role: string };
 
     // Only admin can create work plans
     if (userRole !== 'admin') {
@@ -68,7 +68,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { objectives, targetActivities, ongoingResearchId } = body;
+    const { objectives, targetActivities, ongoingResearchId, employeeId: bodyEmployeeId } = body;
 
     if (!objectives) {
       return NextResponse.json({ error: 'Objectives field is required' }, { status: 400 });
@@ -78,11 +78,15 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'ongoingResearchId is required' }, { status: 400 });
     }
 
+    // Since only admin can create work plans, and they aren't in the employee table,
+    // we set employeeId to null unless one was specifically provided in the body for an employee.
+    const finalEmployeeId = bodyEmployeeId ? parseInt(bodyEmployeeId) : undefined;
+
     const newObjective = await prisma.objectives.create({
       data: {
         objectives,
         targetActivities: targetActivities || null,
-        employeeId,
+        employeeId: finalEmployeeId,
         ongoingResearchId: parseInt(ongoingResearchId),
       },
     });
