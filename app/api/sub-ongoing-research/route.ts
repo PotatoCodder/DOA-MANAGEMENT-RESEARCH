@@ -66,11 +66,6 @@ export async function GET(request: NextRequest) {
     const where: any = {};
     if (ongoingResearchId) where.ongoingResearchId = parseInt(ongoingResearchId);
 
-    // Employees only see their own online reports; admin sees all
-    if (userRole !== 'admin' && userId) {
-      where.userId = userId;
-    }
-
     const subResearches = await prisma.subOngoingResearch.findMany({
       where,
       include: {
