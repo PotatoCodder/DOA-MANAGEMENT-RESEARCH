@@ -38,6 +38,7 @@ export async function GET(request: NextRequest) {
 
     const researches = await prisma.maturedResearch.findMany({
       where,
+      omit: { file: true },
       orderBy: { id: 'desc' },
     });
 

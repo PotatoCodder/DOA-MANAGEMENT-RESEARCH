@@ -57,8 +57,11 @@ export async function GET(request: NextRequest) {
 
     const researches = await prisma.ongoingResearch.findMany({
       where,
+      omit: { pdf: true },
       include: {
-        subResearches: true,
+        subResearches: {
+          omit: { documentation: true }
+        }
       },
       orderBy: { id: 'desc' },
     });

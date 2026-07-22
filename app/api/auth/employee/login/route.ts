@@ -2,14 +2,31 @@ import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { verifyPassword } from '@/lib/hash';
 import { signJWT } from '@/lib/jwt';
+import { ratelimit } from '@/lib/ratelimit';
+import { z } from 'zod';
+
+const loginSchema = z.object({
+  email: z.string().min(1, 'Email or Employee ID is required'),
+  password: z.string().min(1, 'Password is required'),
+});
 
 export async function POST(request: NextRequest) {
   try {
-    const { email, password } = await request.json();
-
-    if (!email || !password) {
-      return NextResponse.json({ error: 'Email and password are required' }, { status: 400 });
+    const ip = request.headers.get('x-forwarded-for') ?? '127.0.0.1';
+    
+    const { success } = await ratelimit.limit(ip);
+    if (!success) {
+      return NextResponse.json({ error: 'Too many requests. Please try again later.' }, { status: 429 });
     }
+
+    const body = await request.json();
+    const parsed = loginSchema.safeParse(body);
+
+    if (!parsed.success) {
+      return NextResponse.json({ error: parsed.error.issues[0].message }, { status: 400 });
+    }
+
+    const { email, password } = parsed.data;
 
     const employee = await prisma.employee.findFirst({
       where: {
@@ -24,13 +41,10 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Invalid credentials' }, { status: 401 });
     }
 
-    // Check if password is hashed (starts with $2b$ for bcrypt) or plain text
     let isValid = false;
     if (employee.password.startsWith('$2b$')) {
-      // Old hashed password - verify using bcrypt
       isValid = await verifyPassword(password, employee.password);
     } else {
-      // Plain text password - compare directly
       isValid = password === employee.password;
     }
 

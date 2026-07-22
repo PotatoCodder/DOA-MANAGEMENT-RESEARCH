@@ -1,14 +1,34 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { signJWT } from '@/lib/jwt';
+import { ratelimit } from '@/lib/ratelimit';
+import { z } from 'zod';
+
+const signUpSchema = z.object({
+  employeeId: z.string().min(1, 'Employee ID is required'),
+  fullName: z.string().optional(),
+  email: z.string().email('Invalid email address'),
+  mobileNumber: z.string().optional(),
+  password: z.string().min(6, 'Password must be at least 6 characters'),
+});
 
 export async function POST(request: NextRequest) {
   try {
-    const { employeeId, fullName, email, mobileNumber, password } = await request.json();
-
-    if (!employeeId || !password || !email) {
-      return NextResponse.json({ error: 'Employee ID, email, and password are required' }, { status: 400 });
+    const ip = request.headers.get('x-forwarded-for') ?? '127.0.0.1';
+    
+    const { success } = await ratelimit.limit(ip);
+    if (!success) {
+      return NextResponse.json({ error: 'Too many requests. Please try again later.' }, { status: 429 });
     }
+
+    const body = await request.json();
+    const parsed = signUpSchema.safeParse(body);
+
+    if (!parsed.success) {
+      return NextResponse.json({ error: parsed.error.issues[0].message }, { status: 400 });
+    }
+
+    const { employeeId, fullName, email, mobileNumber, password } = parsed.data;
 
     const existingEmployee = await prisma.employee.findFirst({
       where: {

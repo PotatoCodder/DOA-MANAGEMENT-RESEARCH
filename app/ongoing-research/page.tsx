@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { Edit, Trash2, X, Loader, Search } from 'lucide-react';
 import Link from 'next/link';
 
@@ -20,8 +21,6 @@ interface OngoingResearch {
 }
 
 export default function OngoingResearchPage() {
-  const [researches, setResearches] = useState<OngoingResearch[]>([]);
-  const [loading, setLoading] = useState(true);
   const [userRole, setUserRole] = useState<string | null>(null);
   const [showModal, setShowModal] = useState(false);
   const [editingResearch, setEditingResearch] = useState<OngoingResearch | null>(null);
@@ -39,11 +38,19 @@ export default function OngoingResearchPage() {
   const [submitting, setSubmitting] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [showPdfModal, setShowPdfModal] = useState(false);
-  const [selectedPdf, setSelectedPdf] = useState<string | null>(null);
+  const [selectedPdf, setSelectedPdf] = useState<number | null>(null);
   const [pdfError, setPdfError] = useState<string | null>(null);
 
+  const { data: researches = [], refetch: fetchResearches, isLoading: loading } = useQuery<OngoingResearch[]>({
+    queryKey: ['ongoingResearches'],
+    queryFn: async () => {
+      const res = await fetch('/api/ongoing-research');
+      if (!res.ok) throw new Error('Failed to fetch researches');
+      return res.json();
+    }
+  });
+
   useEffect(() => {
-    fetchResearches();
     const role = localStorage.getItem('role');
     setUserRole(role);
   }, []);
@@ -65,20 +72,6 @@ export default function OngoingResearchPage() {
       setFormData({ title: '', proponents: '', fundingSource: '', projectDuration: '', budgetAllocation: '', commodity: '', status: '', projectLocation: '', pdf: '' });
     }
   }, [editingResearch]);
-
-  const fetchResearches = async () => {
-    try {
-      const res = await fetch('/api/ongoing-research');
-      if (res.ok) {
-        const data = await res.json();
-        setResearches(data);
-      }
-    } catch (error) {
-      console.error('Failed to fetch researches:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const handleDelete = async (id: number) => {
     if (!confirm('Are you sure you want to delete this research?')) return;
@@ -224,18 +217,16 @@ export default function OngoingResearchPage() {
                     <td className="px-6 py-4 text-black">{research.subResearches.length}</td>
                     <td className="px-6 py-4">
                       <div className="flex gap-2">
-                        {research.pdf && (
-                          <button
-                            onClick={() => {
-                              setSelectedPdf(research.pdf || null);
-                              setShowPdfModal(true);
-                              setPdfError(null);
-                            }}
-                            className="px-3 py-1 bg-green-600 text-white text-sm rounded hover:bg-green-700"
-                          >
-                            View PDF
-                          </button>
-                        )}
+                        <button
+                          onClick={() => {
+                            setSelectedPdf(research.id);
+                            setShowPdfModal(true);
+                            setPdfError(null);
+                          }}
+                          className="px-3 py-1 bg-green-600 text-white text-sm rounded hover:bg-green-700"
+                        >
+                          View PDF
+                        </button>
                         <Link
                           href={`/sub-ongoing-research?ongoingResearchId=${research.id}`}
                           className="px-3 py-1 bg-blue-600 text-white text-sm rounded hover:bg-blue-700"
@@ -446,21 +437,21 @@ export default function OngoingResearchPage() {
                 <div className="text-center">
                   <p className="text-red-600 mb-4">{pdfError}</p>
                   <a
-                    href={selectedPdf}
+                    href={`/api/pdf/ongoingResearch/${selectedPdf}`}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-blue-600 hover:text-blue-800 underline"
+                    className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 transition-colors"
                   >
-                    Open PDF in new tab
+                    Open PDF in New Tab
                   </a>
                 </div>
               </div>
             ) : (
               <iframe
-                src={selectedPdf?.startsWith('/uploads') ? selectedPdf : `data:application/pdf;base64,${selectedPdf}`}
-                className="w-full h-full border rounded"
+                src={`/api/pdf/ongoingResearch/${selectedPdf}`}
+                className="w-full h-[calc(100%-2rem)] border-0"
                 title="PDF Viewer"
-                onError={() => setPdfError('Failed to load PDF. Please try opening it in a new tab.')}
+                onError={() => setPdfError('Failed to load PDF viewer. Please try opening in a new tab.')}
               />
             )}
           </div>

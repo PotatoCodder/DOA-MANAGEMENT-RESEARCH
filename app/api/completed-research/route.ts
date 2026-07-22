@@ -39,6 +39,7 @@ export async function GET(request: NextRequest) {
 
     const researches = await prisma.completedResearch.findMany({
       where,
+      omit: { file: true },
       orderBy: { id: 'desc' },
     });
 
